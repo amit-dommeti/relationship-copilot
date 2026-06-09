@@ -6,7 +6,7 @@ Relationship Copilot is a dark-mode productivity app for people who want to main
 
 The product helps you import LinkedIn contacts, cluster people by where you knew them from, choose the right person to contact this week, draft a message that sounds human, and remember to respond when the conversation continues.
 
-![Relationship Copilot dashboard](assets/screenshots/01-dashboard.png)
+![Relationship Copilot dashboard](assets/screenshots/01-dashboard.svg)
 
 ## Why This Exists
 
@@ -35,11 +35,11 @@ Relationship Copilot turns that anxious blank-message moment into a small workfl
 
 | Weekly focus | Relationship clusters |
 | --- | --- |
-| ![Weekly focus](assets/screenshots/01-dashboard.png) | ![Clusters](assets/screenshots/02-clusters.png) |
+| ![Weekly focus](assets/screenshots/01-dashboard.svg) | ![Clusters](assets/screenshots/02-clusters.svg) |
 
 | Human message drafting | Reply reminders |
 | --- | --- |
-| ![Drafting](assets/screenshots/03-drafting.png) | ![Reply reminders](assets/screenshots/04-replies.png) |
+| ![Drafting](assets/screenshots/03-drafting.svg) | ![Reply reminders](assets/screenshots/04-replies.svg) |
 
 ## Demo Flow
 
