@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Relationship clusters screenshot">
+  <rect width="1280" height="720" fill="#080d14"/>
+  <text x="48" y="70" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">RELATIONSHIP MEMORY</text>
+  <text x="48" y="124" fill="#eef4fb" font-family="Inter,Arial" font-size="46" font-weight="800">Clusters by where you knew them from</text>
+  <text x="50" y="164" fill="#94a3b8" font-family="Inter,Arial" font-size="18">Store shared context once and reuse it across similar outreach.</text>
+  <rect x="48" y="210" width="1184" height="190" rx="8" fill="#101823" stroke="#253244"/>
+  <rect x="80" y="246" width="250" height="110" rx="8" fill="#181f31" stroke="#c4b5fd"/>
+  <text x="104" y="280" fill="#eef4fb" font-family="Inter,Arial" font-size="24" font-weight="800">Square</text>
+  <text x="104" y="310" fill="#c4b5fd" font-family="Inter,Arial" font-size="13" font-weight="800">3 PEOPLE</text>
+  <text x="104" y="338" fill="#94a3b8" font-family="Inter,Arial" font-size="14">Old coworkers from seller onboarding.</text>
+  <rect x="354" y="246" width="250" height="110" rx="8" fill="#151f2c" stroke="#253244"/>
+  <text x="378" y="280" fill="#eef4fb" font-family="Inter,Arial" font-size="24" font-weight="800">PM mentors</text>
+  <text x="378" y="310" fill="#c4b5fd" font-family="Inter,Arial" font-size="13" font-weight="800">1 PERSON</text>
+  <rect x="628" y="246" width="250" height="110" rx="8" fill="#151f2c" stroke="#253244"/>
+  <text x="652" y="280" fill="#eef4fb" font-family="Inter,Arial" font-size="24" font-weight="800">Recruiters</text>
+  <text x="652" y="310" fill="#c4b5fd" font-family="Inter,Arial" font-size="13" font-weight="800">1 PERSON</text>
+  <rect x="48" y="430" width="430" height="210" rx="8" fill="#0e1621" stroke="#253244"/>
+  <text x="78" y="470" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">FILTERED QUEUE</text>
+  <rect x="78" y="496" width="360" height="72" rx="8" fill="#101823" stroke="#2dd4bf"/>
+  <text x="100" y="526" fill="#eef4fb" font-family="Inter,Arial" font-size="18" font-weight="800">Maya Patel</text>
+  <text x="100" y="550" fill="#94a3b8" font-family="Inter,Arial" font-size="14">Square • former coworker • 121 fit</text>
+  <rect x="78" y="584" width="360" height="42" rx="8" fill="#101823" stroke="#253244"/>
+  <text x="100" y="611" fill="#eef4fb" font-family="Inter,Arial" font-size="16" font-weight="700">Ari Kim</text>
+  <rect x="514" y="430" width="718" height="210" rx="8" fill="#101823" stroke="#253244"/>
+  <text x="544" y="470" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">CLUSTER MEMORY</text>
+  <text x="544" y="510" fill="#eef4fb" font-family="Inter,Arial" font-size="28" font-weight="800">Square context travels with the contact</text>
+  <text x="544" y="552" fill="#94a3b8" font-family="Inter,Arial" font-size="18">“We worked together at Square on seller onboarding.”</text>
+  <text x="544" y="590" fill="#94a3b8" font-family="Inter,Arial" font-size="18">Messages start from shared memory instead of a blank page.</text>
+</svg>

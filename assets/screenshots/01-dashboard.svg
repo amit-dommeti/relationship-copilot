@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Relationship Copilot dashboard screenshot">
+  <rect width="1280" height="720" fill="#080d14"/>
+  <circle cx="130" cy="70" r="220" fill="#2dd4bf" opacity=".10"/>
+  <circle cx="1130" cy="40" r="210" fill="#93c5fd" opacity=".08"/>
+  <text x="48" y="56" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">CAREER RELATIONSHIP SYSTEM</text>
+  <text x="48" y="112" fill="#eef4fb" font-family="Inter,Arial" font-size="56" font-weight="800">Relationship Copilot</text>
+  <text x="50" y="154" fill="#94a3b8" font-family="Inter,Arial" font-size="19">Import LinkedIn contacts, find warm relationships, draft human messages, and remember replies.</text>
+  <rect x="950" y="40" width="280" height="48" rx="8" fill="#102f2b" stroke="#2dd4bf" stroke-opacity=".35"/>
+  <text x="974" y="70" fill="#99f6e4" font-family="Inter,Arial" font-size="16" font-weight="700">● Local-first for v0</text>
+  <rect x="950" y="104" width="132" height="76" rx="8" fill="#101823" stroke="#253244"/>
+  <text x="970" y="138" fill="#eef4fb" font-family="Inter,Arial" font-size="30" font-weight="800">0</text>
+  <text x="970" y="162" fill="#94a3b8" font-family="Inter,Arial" font-size="13" font-weight="700">SENT</text>
+  <rect x="1098" y="104" width="132" height="76" rx="8" fill="#101823" stroke="#253244"/>
+  <text x="1118" y="138" fill="#eef4fb" font-family="Inter,Arial" font-size="30" font-weight="800">1</text>
+  <text x="1118" y="162" fill="#94a3b8" font-family="Inter,Arial" font-size="13" font-weight="700">DRAFTED</text>
+  <rect x="48" y="220" width="1184" height="190" rx="8" fill="#101823" stroke="#253244"/>
+  <text x="78" y="260" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">AI WEEKLY FOCUS</text>
+  <text x="78" y="294" fill="#eef4fb" font-family="Inter,Arial" font-size="28" font-weight="800">This week's recommended contacts</text>
+  <text x="78" y="326" fill="#94a3b8" font-family="Inter,Arial" font-size="16">Ranked by warmth, context, recency, status, and message-readiness.</text>
+  <g font-family="Inter,Arial">
+    <rect x="420" y="246" width="180" height="126" rx="8" fill="#151f2c" stroke="#2dd4bf"/>
+    <text x="440" y="276" fill="#0f172a" font-size="13" font-weight="800">01</text><rect x="436" y="256" width="32" height="28" rx="6" fill="#e2e8f0"/>
+    <text x="440" y="310" fill="#eef4fb" font-size="18" font-weight="800">Maya Patel</text>
+    <text x="440" y="338" fill="#94a3b8" font-size="14">Square context is ready</text>
+    <text x="440" y="360" fill="#99f6e4" font-size="13" font-weight="700">Draft a warm check-in</text>
+    <rect x="620" y="246" width="180" height="126" rx="8" fill="#151f2c" stroke="#253244"/>
+    <text x="640" y="310" fill="#eef4fb" font-size="18" font-weight="800">Ari Kim</text>
+    <text x="640" y="338" fill="#94a3b8" font-size="14">Old coworker cohort</text>
+    <rect x="820" y="246" width="180" height="126" rx="8" fill="#151f2c" stroke="#253244"/>
+    <text x="840" y="310" fill="#eef4fb" font-size="18" font-weight="800">Jordan Lee</text>
+    <text x="840" y="338" fill="#94a3b8" font-size="14">Mentor relationship</text>
+    <rect x="1020" y="246" width="180" height="126" rx="8" fill="#151f2c" stroke="#253244"/>
+    <text x="1040" y="310" fill="#eef4fb" font-size="18" font-weight="800">Nina Garcia</text>
+    <text x="1040" y="338" fill="#94a3b8" font-size="14">Recruiter reconnect</text>
+  </g>
+  <rect x="48" y="438" width="360" height="220" rx="8" fill="#101823" stroke="#253244"/>
+  <text x="78" y="476" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">IMPORT</text>
+  <text x="78" y="510" fill="#eef4fb" font-family="Inter,Arial" font-size="24" font-weight="800">LinkedIn CSV import</text>
+  <rect x="78" y="538" width="300" height="72" rx="8" fill="#151f2c" stroke="#526173" stroke-dasharray="5 5"/>
+  <text x="102" y="581" fill="#eef4fb" font-family="Inter,Arial" font-size="16" font-weight="700">Upload Connections.csv</text>
+  <rect x="432" y="438" width="360" height="220" rx="8" fill="#0e1621" stroke="#253244"/>
+  <text x="462" y="476" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">PIPELINE</text>
+  <text x="462" y="510" fill="#eef4fb" font-family="Inter,Arial" font-size="24" font-weight="800">Relationship queue</text>
+  <rect x="462" y="536" width="300" height="80" rx="8" fill="#101823" stroke="#2dd4bf"/>
+  <text x="482" y="566" fill="#eef4fb" font-family="Inter,Arial" font-size="18" font-weight="800">Maya Patel</text>
+  <text x="482" y="590" fill="#94a3b8" font-family="Inter,Arial" font-size="14">Product Manager at Square</text>
+  <rect x="816" y="438" width="416" height="220" rx="8" fill="#101823" stroke="#253244"/>
+  <text x="846" y="476" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">DRAFTING</text>
+  <text x="846" y="510" fill="#eef4fb" font-family="Inter,Arial" font-size="24" font-weight="800">Human message composer</text>
+  <text x="846" y="548" fill="#94a3b8" font-family="Inter,Arial" font-size="16">Greeting-first, short, specific, and low-pressure.</text>
+</svg>

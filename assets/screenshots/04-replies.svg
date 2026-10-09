@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Reply reminders screenshot">
+  <rect width="1280" height="720" fill="#080d14"/>
+  <text x="48" y="70" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">REPLY LOOP</text>
+  <text x="48" y="124" fill="#eef4fb" font-family="Inter,Arial" font-size="46" font-weight="800">Responses to manage</text>
+  <text x="50" y="164" fill="#94a3b8" font-family="Inter,Arial" font-size="18">Paste replies and set reminders so warm conversations do not go stale.</text>
+  <rect x="48" y="210" width="1184" height="180" rx="8" fill="#101823" stroke="#253244"/>
+  <rect x="80" y="250" width="250" height="96" rx="8" fill="#1f2430" stroke="#fbbf24"/>
+  <text x="104" y="282" fill="#eef4fb" font-family="Inter,Arial" font-size="22" font-weight="800">Maya Patel</text>
+  <text x="104" y="312" fill="#fbbf24" font-family="Inter,Arial" font-size="13" font-weight="800">RESPOND JUN 9, 9:00 AM</text>
+  <text x="104" y="336" fill="#94a3b8" font-family="Inter,Arial" font-size="14">Great to hear from you...</text>
+  <rect x="358" y="250" width="250" height="96" rx="8" fill="#151f2c" stroke="#253244"/>
+  <text x="382" y="282" fill="#eef4fb" font-family="Inter,Arial" font-size="22" font-weight="800">No replies waiting</text>
+  <text x="382" y="314" fill="#94a3b8" font-family="Inter,Arial" font-size="14">When someone responds, paste it here.</text>
+  <rect x="48" y="430" width="520" height="220" rx="8" fill="#101823" stroke="#253244"/>
+  <text x="80" y="470" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">CONTACT STATE</text>
+  <text x="80" y="510" fill="#eef4fb" font-family="Inter,Arial" font-size="30" font-weight="800">Needs reply</text>
+  <text x="82" y="548" fill="#94a3b8" font-family="Inter,Arial" font-size="18">Status changes from sent to needs reply when a response is saved.</text>
+  <rect x="80" y="580" width="160" height="44" rx="8" fill="#2dd4bf"/>
+  <text x="108" y="608" fill="#042f2e" font-family="Inter,Arial" font-size="16" font-weight="800">Mark handled</text>
+  <rect x="610" y="430" width="622" height="220" rx="8" fill="#171d27" stroke="#fbbf24" stroke-opacity=".35"/>
+  <text x="642" y="470" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">REMINDER</text>
+  <text x="642" y="510" fill="#eef4fb" font-family="Inter,Arial" font-size="30" font-weight="800">Browser reminders for follow-through</text>
+  <text x="642" y="552" fill="#94a3b8" font-family="Inter,Arial" font-size="18">Useful for demos today. Production would move this to durable</text>
+  <text x="642" y="580" fill="#94a3b8" font-family="Inter,Arial" font-size="18">backend jobs, email, push, or calendar reminders.</text>
+</svg>

@@ -1,146 +1,89 @@
 # Relationship Copilot
 
-[![Test](https://github.com/amit-dommeti/relationship-copilot/actions/workflows/test.yml/badge.svg)](https://github.com/amit-dommeti/relationship-copilot/actions/workflows/test.yml)
+[![Tests](https://github.com/amit-dommeti/relationship-copilot/actions/workflows/test.yml/badge.svg)](https://github.com/amit-dommeti/relationship-copilot/actions/workflows/test.yml)
 
-Relationship Copilot is a dark-mode productivity app for people who want to maintain career relationships but freeze when it is time to message old coworkers, mentors, recruiters, or professional contacts.
+**Keep in touch. Without overthinking it.**
 
-The product helps you import LinkedIn contacts, cluster people by where you knew them from, choose the right person to contact this week, draft a message that sounds human, and remember to respond when the conversation continues.
+A personal relationship workspace for the people you already know: old teammates, mentors, classmates, and the friends you keep meaning to message. Built around small, thoughtful check-ins, not sales sequences.
 
-![Relationship Copilot dashboard](assets/screenshots/01-dashboard.svg)
+![The weekly workspace](assets/screenshots/v2/01-today.png)
 
-## Why This Exists
+## The Product Loop
 
-Networking advice usually says "just reach out." The hard part is not knowing that relationships matter. The hard part is deciding who to message, remembering the shared context, writing something that does not sound fake, and following up when someone replies.
+1. **Bring your people along.** Import LinkedIn's official ZIP directly, paste spreadsheet rows, or add one person.
+2. **Remember your shared chapters.** Put former Square coworkers in a circle, even after they change jobs. Shared memories stay attached to the circle.
+3. **Choose a small hello.** An explainable shortlist uses your check-in rhythm, recent conversations, and relationship context.
+4. **Make it sound like you.** Optional AI produces two greeting-first drafts from selected context. Edit, copy, and send yourself.
+5. **Keep the conversation going.** Save replies, clear your reply queue, snooze a check-in, or download a calendar reminder.
 
-Relationship Copilot turns that anxious blank-message moment into a small workflow:
+## A Look Around
 
-1. Import contacts.
-2. Group them by real-life context.
-3. Pick a warm relationship.
-4. Draft a short human message.
-5. Track replies and reminders.
-
-## Product Highlights
-
-- **LinkedIn CSV import**: Import `Connections.csv` from LinkedIn's official data export.
-- **Weekly recommendations**: Rank contacts by warmth, recency, relationship type, status, and message readiness.
-- **Relationship clusters**: Group people by where you knew them from, such as Square, NYU, PM mentors, or recruiters.
-- **Cluster memory**: Store shared context once and reuse it across similar outreach.
-- **Human message composer**: Converts private shorthand into conversational second-person messages.
-- **Reply tracking**: Paste replies, mark conversations as needing response, and set browser reminders.
-- **Local-first privacy**: Data stays in browser storage for v0.
-- **Platform-safe LinkedIn stance**: No password access, scraping, inbox automation, or auto-send behavior.
-
-## Screenshots
-
-| Weekly focus | Relationship clusters |
+| People, without the spreadsheet feel | Shared chapters |
 | --- | --- |
-| ![Weekly focus](assets/screenshots/01-dashboard.svg) | ![Clusters](assets/screenshots/02-clusters.svg) |
+| ![People](assets/screenshots/v2/02-people.png) | ![Circles](assets/screenshots/v2/03-circles.png) |
 
-| Human message drafting | Reply reminders |
+| A focused composer | The reply queue |
 | --- | --- |
-| ![Drafting](assets/screenshots/03-drafting.svg) | ![Reply reminders](assets/screenshots/04-replies.svg) |
+| ![Composer](assets/screenshots/v2/04-composer.png) | ![Inbox](assets/screenshots/v2/05-inbox.png) |
 
-## Demo Flow
+![Official LinkedIn import](assets/screenshots/v2/06-import.png)
 
-1. Run the app locally.
-2. Click **Demo mode** to load a Square coworker cohort plus mentor and recruiter examples.
-3. Review **This week's recommended contacts**.
-4. Click the **Square** cluster and see old coworkers grouped together.
-5. Select Maya Patel and click **Draft message**.
-6. Copy the message, mark it sent, paste a simulated reply, and set a reminder.
+These are real browser captures of the v2 app with fictional demo data. The composer screenshot shows the explicitly labeled no-key starter, not a claimed AI output. [All screenshots and capture procedure](docs/SCREENSHOTS.md).
 
-## Local Development
+## Try It Locally
 
-```bash
-git clone https://github.com/amit-dommeti/relationship-copilot.git
-cd relationship-copilot
-npm install
-npm start
+Requires Node.js 22.13+ (Node 24 LTS recommended).
+
+```sh
+npm ci
+npm run dev
 ```
 
-Open [http://localhost:4173](http://localhost:4173).
+Open [localhost:4173](http://localhost:4173), or [the isolated demo](http://localhost:4173/?demo=1). Set `PORT` to choose a different port. Real data persists in `data/copilot.sqlite`; demo changes stay in a separate browser store. Clearing browser storage does not erase the real workspace.
 
-Run the message composer smoke test:
-
-```bash
+```sh
 npm test
+npm run build
+npx playwright install chromium
+npm run test:browser
 ```
 
-## AI Recommendation Strategy
+## LinkedIn: What Works, What Doesn't
 
-The app uses a transparent local ranking engine first. It scores contacts by:
+**For a US account, this release uses LinkedIn's official data export, not live account sync.**
 
-- whether they have not been contacted yet
-- relationship warmth, such as former coworker or mentor
-- available memory or reason to reach out
-- cluster memory availability
-- time since connection
-- whether a reply is waiting
-- whether the contact was already handled
+Import the ZIP without opening it. Only Connections.csv is extracted in the browser, then you review before saving. Repeated imports match profile URLs or emails and preserve notes, drafts, and circle membership. Names alone are not a safe identity match.
 
-If served with `web/server.mjs` and a usable `OPENAI_API_KEY`, the **Refresh AI picks** action can call an OpenAI-backed endpoint. The endpoint sends sanitized contact summaries and asks the model to return up to four weekly recommendations with a reason and next step. If the API key is missing, the local ranking remains active so demos do not break.
+Standard LinkedIn sign-in supplies your own profile, not your network or personal inbox. Official personal data portability is region-restricted to EEA/Switzerland members. We do not offer a misleading Connect button, scrape LinkedIn, store session cookies, or send messages automatically.
 
-## Message Style
+A personal agent may help with the official export handoff, subject to login, site, and file-transfer limits. That is an optional workflow to test, not an implemented live integration. [US account guide and research](docs/LINKEDIN_ACCESS.md).
 
-The message composer is intentionally anti-template. It starts with a greeting, keeps the message short, rewrites third-person notes into second-person language, and avoids fake networking phrases.
+## AI, With Clear Boundaries
 
-See [MESSAGE_STYLE_PROMPT.md](MESSAGE_STYLE_PROMPT.md).
+- Suggestions are **deterministic and explainable**, not AI predictions about who likes you.
+- Optional message generation uses the OpenAI Responses API, defaulting to `gpt-5.6-terra`. The model is configurable.
+- Only the selected person's notes, relevant circle memories, your voice preference, and up to eight saved messages are sent after you click the drafting action.
+- No key: clearly labeled local starter text. Provider failure: an error, never fake AI success.
+- Nothing is automatically sent to LinkedIn. Generated drafts need review.
 
-Example output:
+Set `OPENAI_API_KEY` privately using your hosting provider's secrets, or an untracked local `.env`. See [.env.example](.env.example), [prompt design](MESSAGE_STYLE_PROMPT.md), and [AI evaluation plan](docs/AI_EVALUATION.md).
 
-```text
-Hi Maya — hope you’ve been doing well. I was thinking back to our work on onboarding experiments. You had a real knack for turning messy user feedback into clear product bets. I saw that you moved into a fintech PM role. No pressure, but I’d enjoy catching up sometime.
-```
+## Deployment
 
-## LinkedIn Integration Position
+The same app supports a private hosted Site with managed sign-in and a persistent database, or a portable Node/Docker deployment with password protection and a persistent volume. [Deployment and backup guide](docs/DEPLOYMENT.md).
 
-Relationship Copilot does not ask for LinkedIn passwords and does not automate sending messages.
+The repository is public; your relationship workspace should remain private. No real contacts, messages, credentials, or raw LinkedIn exports belong in this repo.
 
-Personal LinkedIn inbox and connection sync are not available through a normal self-serve public API. LinkedIn supports APIs for some approved use cases, including Pages messaging for LinkedIn Pages, but that is different from reading a member's personal inbox. The current product uses official LinkedIn data export plus manual copy/paste to avoid account risk.
+## Build Notes
 
-## Product Docs
+- Vanilla JavaScript, semantic HTML, dark responsive CSS, Lucide icons.
+- Shared request handler for Node and Cloudflare Workers.
+- SQLite locally; D1 for hosted per-user storage.
+- Papa Parse for CSV; fflate for bounded ZIP extraction; esbuild for packaging.
+- Unit/integration tests plus Playwright flows at desktop, tablet, and mobile sizes.
 
-- [Product OS](PROJECT_OS.md)
-- [Case Study](docs/CASE_STUDY.md)
-- [Iteration Log](docs/ITERATION_LOG.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Demo Script](docs/DEMO_SCRIPT.md)
-- [Screenshot Shot List](docs/SCREENSHOTS.md)
-- [Roadmap](docs/ROADMAP.md)
+## Product Decisions And Evidence
 
-## Tech Stack
+[Product brief](PROJECT_OS.md) · [Case study](docs/CASE_STUDY.md) · [Iteration log](docs/ITERATION_LOG.md) · [Architecture](docs/ARCHITECTURE.md) · [Demo script](docs/DEMO_SCRIPT.md) · [Release checks](docs/SHIP_CHECKLIST.md)
 
-- Vanilla HTML, CSS, and JavaScript
-- Node.js local server
-- Browser localStorage for v0 persistence
-- Optional OpenAI-compatible recommendation endpoint through `web/server.mjs`
-
-## Repository Structure
-
-```text
-.
-├── assets/
-│   ├── demo-data/
-│   └── screenshots/
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── CASE_STUDY.md
-│   ├── DEMO_SCRIPT.md
-│   ├── ITERATION_LOG.md
-│   ├── ROADMAP.md
-│   └── SCREENSHOTS.md
-├── web/
-│   ├── app.js
-│   ├── index.html
-│   ├── message-engine.test.mjs
-│   ├── server.mjs
-│   └── styles.css
-├── MESSAGE_STYLE_PROMPT.md
-├── PROJECT_OS.md
-└── package.json
-```
-
-## Repository Status
-
-This is a portfolio-ready v0. It is intentionally local-first and platform-safe. The next production step would be adding accounts, encrypted storage, durable reminders, and approved integrations.
+This is an implementation-tested personal product, not a validated business. No adoption, retention, outreach uplift, or AI preference study has been measured. Earlier iteration labels are retrospective feature milestones, not evidence of separate launches.

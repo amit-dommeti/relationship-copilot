@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Human message drafting screenshot">
+  <rect width="1280" height="720" fill="#080d14"/>
+  <rect x="48" y="44" width="1184" height="632" rx="8" fill="#101823" stroke="#253244"/>
+  <text x="80" y="88" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">SELECTED RELATIONSHIP</text>
+  <text x="80" y="138" fill="#eef4fb" font-family="Inter,Arial" font-size="44" font-weight="800">Maya Patel</text>
+  <text x="82" y="174" fill="#94a3b8" font-family="Inter,Arial" font-size="18">Product Manager at Square</text>
+  <rect x="80" y="198" width="520" height="42" rx="8" fill="#211a35"/>
+  <text x="100" y="224" fill="#c4b5fd" font-family="Inter,Arial" font-size="14" font-weight="800">High recommendation · Use Square cluster memory, then tailor one line</text>
+  <text x="80" y="294" fill="#94a3b8" font-family="Inter,Arial" font-size="15" font-weight="800">WHERE YOU KNEW THEM FROM</text>
+  <rect x="80" y="312" width="360" height="46" rx="8" fill="#0b121c" stroke="#253244"/>
+  <text x="100" y="341" fill="#eef4fb" font-family="Inter,Arial" font-size="16">Square</text>
+  <text x="80" y="398" fill="#94a3b8" font-family="Inter,Arial" font-size="15" font-weight="800">SHARED MEMORY</text>
+  <rect x="80" y="416" width="520" height="86" rx="8" fill="#0b121c" stroke="#253244"/>
+  <text x="100" y="448" fill="#eef4fb" font-family="Inter,Arial" font-size="16">We worked together at Square on seller onboarding.</text>
+  <text x="100" y="476" fill="#eef4fb" font-family="Inter,Arial" font-size="16">I want messages to feel like warm old coworker notes.</text>
+  <rect x="80" y="538" width="160" height="48" rx="8" fill="#2dd4bf"/>
+  <text x="112" y="568" fill="#042f2e" font-family="Inter,Arial" font-size="16" font-weight="800">Draft message</text>
+  <rect x="650" y="80" width="520" height="540" rx="8" fill="#151f2c" stroke="#253244"/>
+  <text x="686" y="122" fill="#99f6e4" font-family="Inter,Arial" font-size="14" font-weight="800">DRAFT</text>
+  <text x="686" y="160" fill="#eef4fb" font-family="Inter,Arial" font-size="28" font-weight="800">LinkedIn message</text>
+  <rect x="686" y="196" width="448" height="280" rx="8" fill="#0b121c" stroke="#253244"/>
+  <text x="714" y="236" fill="#eef4fb" font-family="Inter,Arial" font-size="18">Hi Maya — hope you’ve been doing well.</text>
+  <text x="714" y="280" fill="#eef4fb" font-family="Inter,Arial" font-size="18">I was thinking back to our work on</text>
+  <text x="714" y="306" fill="#eef4fb" font-family="Inter,Arial" font-size="18">onboarding experiments. You had a real</text>
+  <text x="714" y="332" fill="#eef4fb" font-family="Inter,Arial" font-size="18">knack for turning messy user feedback</text>
+  <text x="714" y="358" fill="#eef4fb" font-family="Inter,Arial" font-size="18">into clear product bets.</text>
+  <text x="714" y="410" fill="#eef4fb" font-family="Inter,Arial" font-size="18">No pressure, but I’d enjoy catching up</text>
+  <text x="714" y="436" fill="#eef4fb" font-family="Inter,Arial" font-size="18">sometime.</text>
+  <rect x="686" y="510" width="110" height="44" rx="8" fill="#151f2c" stroke="#253244"/>
+  <text x="722" y="538" fill="#eef4fb" font-family="Inter,Arial" font-size="16" font-weight="800">Copy</text>
+  <rect x="814" y="510" width="130" height="44" rx="8" fill="#151f2c" stroke="#253244"/>
+  <text x="842" y="538" fill="#eef4fb" font-family="Inter,Arial" font-size="16" font-weight="800">Mark sent</text>
+</svg>
