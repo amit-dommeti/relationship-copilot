@@ -8,6 +8,8 @@ Sites supplies managed sign-in and provisions the `DB` D1 binding. Every private
 
 To publish a new version, build and test, synchronize the exact source commit through the Sites source workflow, and deploy its matching archive. Never put source credentials or API keys in the manifest.
 
+`npm run build` recreates the generated `dist` directory. Never keep hand-edited assets, exports, or credentials there: stale files must not leak into a later upload. A regression test seeds a duplicate SQL file and verifies that rebuilding removes it while preserving the source migration exactly. Applied migrations and their journal history must remain unchanged; append migrations for future schema changes.
+
 Optional secret: `OPENAI_API_KEY`. Optional configuration: `OPENAI_MODEL=gpt-5.6-terra`. Without the key, starter drafts remain available. OpenAI Developers can assist key provisioning after its required approval; installing the plugin alone does not activate AI.
 
 ## Portable Node Hosting

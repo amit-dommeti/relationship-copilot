@@ -167,6 +167,147 @@ try {
     await page.getByLabel("Message draft").inputValue(),
     "Hi Test, saved across reloads.",
   );
+  // A failed autosave must never block copying the text still in the editor.
+  const failDraftSave = (route) =>
+    route.request().method() === "PATCH"
+      ? route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "Test save outage" }),
+        })
+      : route.continue();
+  await page.route("**/api/contacts/*", failDraftSave);
+  await page.evaluate(() => {
+    window.copiedDraft = null;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async (value) => (window.copiedDraft = value) },
+    });
+  });
+  const unsavedDraft = "Hi Test, can we catch up after your launch?";
+  await page.getByLabel("Message draft").fill(unsavedDraft);
+  await page.waitForFunction(() =>
+    document.querySelector("#draft-saved")?.textContent.includes("Not saved"),
+  );
+  await page.getByRole("button", { name: "Copy message", exact: true }).click();
+  assert.equal(await page.evaluate(() => window.copiedDraft), unsavedDraft);
+  await page
+    .getByRole("button", { name: "Retry saving draft", exact: true })
+    .click();
+  await page.waitForFunction(() =>
+    document.querySelector("#draft-saved")?.textContent.includes("Not saved"),
+  );
+  await page.getByRole("tab", { name: "Relationship", exact: true }).click();
+  await page.getByRole("tab", { name: "Write a hello", exact: true }).click();
+  assert.match(await page.locator("#draft-saved").innerText(), /Not saved/);
+  await page.getByRole("button", { name: "Close detail", exact: true }).click();
+  await page
+    .getByRole("button", { name: /Test Person/ })
+    .first()
+    .click();
+  assert.equal(
+    await page.getByLabel("Message draft").inputValue(),
+    unsavedDraft,
+  );
+  assert.match(await page.locator("#draft-saved").innerText(), /Not saved/);
+  await page.screenshot({
+    path: process.env.UPDATE_RECOVERY_SCREENSHOT
+      ? "assets/screenshots/v2/08-draft-recovery.png"
+      : "test-results/08-draft-recovery.png",
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page
+    .getByRole("button", { name: "Retry saving draft", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "test-results/08-draft-recovery-mobile.png" });
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  const saveState = await page.locator(".draft-save-state").boundingBox();
+  const wordCount = await page.locator("#word-count").boundingBox();
+  assert.ok(
+    saveState.x + saveState.width <= wordCount.x,
+    "Save status overlaps word count",
+  );
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
+  const warning = page.waitForEvent("dialog");
+  const blockedReload = page.reload().catch(() => {});
+  const dialog = await warning;
+  assert.equal(dialog.type(), "beforeunload");
+  await dialog.dismiss();
+  await blockedReload;
+  assert.equal(
+    await page.getByLabel("Message draft").inputValue(),
+    unsavedDraft,
+  );
+  await page.unroute("**/api/contacts/*", failDraftSave);
+  await page
+    .getByRole("button", { name: "Retry saving draft", exact: true })
+    .click();
+  await page.waitForFunction(
+    () => document.querySelector("#draft-saved")?.textContent === "Draft saved",
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Retry saving draft", exact: true })
+      .isVisible(),
+    false,
+  );
+  // No reload warning after recovery, and the exact draft survives the reload.
+  await page.reload();
+  await page
+    .getByRole("button", { name: /Test Person/ })
+    .first()
+    .click();
+  assert.equal(
+    await page.getByLabel("Message draft").inputValue(),
+    unsavedDraft,
+  );
+  // Clearing a draft is also an edit that must survive a reload.
+  const cleared = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/contacts/") &&
+      response.request().method() === "PATCH",
+  );
+  await page.getByLabel("Message draft").fill("");
+  assert.equal((await cleared).status(), 200);
+  await page.waitForFunction(
+    () =>
+      document.querySelector("#draft-saved")?.textContent ===
+      "Only you can send this",
+  );
+  await page.reload();
+  await page
+    .getByRole("button", { name: /Test Person/ })
+    .first()
+    .click();
+  assert.equal(await page.getByLabel("Message draft").inputValue(), "");
+  // Generated starters use the same recovery path, not an untracked write.
+  await page.route("**/api/contacts/*", failDraftSave);
+  await page
+    .getByRole("button", { name: "Help me start", exact: true })
+    .click();
+  await page.waitForFunction(() =>
+    document.querySelector("#draft-saved")?.textContent.includes("Not saved"),
+  );
+  assert.match(await page.getByLabel("Message draft").inputValue(), /^Hi Test/);
+  await page.unroute("**/api/contacts/*", failDraftSave);
+  await page
+    .getByRole("button", { name: "Retry saving draft", exact: true })
+    .click();
+  await page.waitForFunction(
+    () => document.querySelector("#draft-saved")?.textContent === "Draft saved",
+  );
+  assert.equal(
+    await page
+      .getByLabel("Message draft")
+      .evaluate((el) => el === document.activeElement),
+    true,
+  );
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Import", exact: true }).click();
   await page.locator("#import-file").setInputFiles({
@@ -221,7 +362,7 @@ try {
     .waitFor();
   assert.deepEqual(errors, []);
   console.log(
-    "Browser checks passed: six routes at desktop/tablet/mobile, drafts, reply loop, circles, ZIP import, dedupe, persistence, demo isolation, calendar download.",
+    "Browser checks passed: six routes at desktop/tablet/mobile, drafts, failed-save copying/retry/navigation, unsaved reload warning, empty-draft persistence, reply loop, circles, ZIP import, dedupe, persistence, demo isolation, calendar download.",
   );
 } finally {
   await browser?.close();

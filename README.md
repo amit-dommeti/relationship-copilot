@@ -30,6 +30,8 @@ A personal relationship workspace for the people you already know: old teammates
 
 These are real browser captures of the v2 app with fictional demo data. The composer screenshot shows the explicitly labeled no-key starter, not a claimed AI output. [All screenshots and capture procedure](docs/SCREENSHOTS.md).
 
+**Draft recovery:** copying and browsing remain available when a save fails. Retry from the composer without retyping, and receive a browser warning before leaving with unsaved changes. Unsaved drafts stay in the current tab, not a durable offline store. [Recovery screenshot](assets/screenshots/v2/08-draft-recovery.png).
+
 ## Try It Locally
 
 Requires Node.js 22.13+ (Node 24 LTS recommended).
@@ -84,6 +86,6 @@ The repository is public; your relationship workspace should remain private. No 
 
 ## Product Decisions And Evidence
 
-[Product brief](PROJECT_OS.md) · [Case study](docs/CASE_STUDY.md) · [Iteration log](docs/ITERATION_LOG.md) · [Architecture](docs/ARCHITECTURE.md) · [Demo script](docs/DEMO_SCRIPT.md) · [Release checks](docs/SHIP_CHECKLIST.md)
+[Product brief](PROJECT_OS.md) · [Current state](CURRENT_STATE.md) · [Case study](docs/CASE_STUDY.md) · [Iteration log](docs/ITERATION_LOG.md) · [Architecture](docs/ARCHITECTURE.md) · [Demo script](docs/DEMO_SCRIPT.md) · [Release checks](docs/SHIP_CHECKLIST.md)
 
 This is an implementation-tested personal product, not a validated business. No adoption, retention, outreach uplift, or AI preference study has been measured. Earlier iteration labels are retrospective feature milestones, not evidence of separate launches.

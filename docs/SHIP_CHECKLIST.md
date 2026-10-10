@@ -18,3 +18,17 @@ October 9, 2026. Checks apply to Relationship Copilot only.
 - [ ] User outcome or retention experiment completed.
 
 Publication is reported from the hosting tool's result, not inferred from this checklist. Server-side analytics are not enabled. The weekly count is based on messages the user marks sent, not verified LinkedIn delivery.
+
+## Draft Recovery Checks - October 10, 2026
+
+- [x] Original failed-save/copy regression reproduced before the fix.
+- [x] 19 unit/integration tests pass, including five queue recovery/ordering tests and an isolated clean-build test.
+- [x] Production client and Worker build pass.
+- [x] Full Chromium browser suite passes with synthetic contacts and temporary storage.
+- [x] Failed save, repeat failure, copy, navigation, explicit retry, reload warning, empty draft, and generated-starter recovery checked.
+- [x] Desktop and mobile recovery controls visually reviewed; no status/word-count overlap.
+- [x] Recovery screenshot contains only synthetic test data.
+- [x] Stale build-output regression reproduced and fixed without changing applied SQL or database records.
+- [ ] Other browser engines and assistive-technology behavior audited.
+
+Unsaved drafts are retained only in the current tab. The unload warning is a browser safeguard, not crash recovery or guaranteed mobile protection.

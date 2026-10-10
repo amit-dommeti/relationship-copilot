@@ -1408,6 +1408,22 @@ input[type="checkbox"] {
   align-items: center;
   font-size: 10px;
   color: var(--muted);
+  gap: 12px;
+}
+.draft-save-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+}
+.composer-meta #word-count {
+  flex-shrink: 0;
+}
+.composer-meta .save-error {
+  color: #ffc8ad;
+}
+#retry-draft[hidden] {
+  display: none;
 }
 .notice {
   padding: 12px 14px;

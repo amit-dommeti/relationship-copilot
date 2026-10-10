@@ -1,6 +1,8 @@
 import { build } from "esbuild";
-import { mkdir, copyFile, cp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, copyFile, cp, readFile, writeFile, rm } from "node:fs/promises";
 import { resolve } from "node:path";
+// Deployment must contain only this build, never stale assets or migrations.
+await rm("dist", { recursive: true, force: true });
 await mkdir("dist/client", { recursive: true });
 await mkdir("dist/server", { recursive: true });
 await mkdir("dist/.openai", { recursive: true });

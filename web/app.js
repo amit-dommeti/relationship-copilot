@@ -56,6 +56,7 @@ import {
 } from "../shared/domain.js";
 import { importFile, parseContacts, parseBackup } from "../shared/import.js";
 import { demoState } from "./demo.js";
+import { createDraftSaver } from "./draft-saver.js";
 const iconSet = {
   Sun,
   Users,
@@ -144,19 +145,40 @@ let drafts = new Map(),
   variants = new Map(),
   intent = "catch-up",
   loginInfo = null;
-let pendingDraft = null,
-  draftWrite = Promise.resolve();
+const draftSaver = createDraftSaver(
+  (id, value) => updateContact(id, { draft: value }, { paint: false }),
+  () => paintDraftStatus(),
+);
 async function flushDraft() {
   clearTimeout(saveTimer);
-  if (pendingDraft) {
-    const { id, value } = pendingDraft;
-    pendingDraft = null;
-    draftWrite = draftWrite
-      .catch(() => {})
-      .then(() => updateContact(id, { draft: value }, { paint: false }));
-  }
-  await draftWrite;
+  await draftSaver.flush();
 }
+function paintDraftStatus() {
+  const label = $("#draft-saved"),
+    retry = $("#retry-draft");
+  if (!label || !selected) return;
+  const status = draftSaver.status(selected);
+  const message =
+    status === "error"
+      ? "Not saved. Keep this tab open."
+      : status === "pending" || status === "saving"
+        ? "Saving..."
+        : (drafts.get(selected) ?? selectedContact()?.draft)
+          ? "Draft saved"
+          : "Only you can send this";
+  if (label.textContent !== message) label.textContent = message;
+  label.classList.toggle("save-error", status === "error");
+  if (retry) {
+    if (status === "error") retry.hidden = false;
+    else if (status !== "saving") retry.hidden = true;
+    retry.disabled = status === "saving";
+  }
+}
+window.addEventListener("beforeunload", (event) => {
+  if (!draftSaver.hasUnsaved()) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
 const initials = (name) =>
   name
     .split(/\s+/)
@@ -552,7 +574,7 @@ function drawDetail(first = false) {
       )
       .join(
         "",
-      )}</select>${btn(savedDraft ? "Try another draft" : "Help me start", "draft", "sparkles")}</div>${v ? `<div class="row">${btn("Direct", "variant", "", "quiet", 'data-id="0"')}${btn("Warmer", "variant", "", "quiet", 'data-id="1"')}</div>` : ""}<label><span class="hide">Message draft</span><textarea id="draft-text" aria-label="Message draft" placeholder="Start with a simple hello..." maxlength="8000">${esc(savedDraft)}</textarea></label><div class="composer-meta"><span id="draft-saved">${savedDraft ? "Draft saved" : "Only you can send this"}</span><span id="word-count">${savedDraft.trim() ? savedDraft.trim().split(/\s+/).length : 0} words</span></div>${v ? `<div class="notice">${esc(v.grounding)}${v.needsReview ? " Review before sending." : ""}</div>` : !data.capabilities.ai ? '<p class="small-caption">Starter drafts are simple suggestions, not AI. Add one real detail to make yours personal.</p>' : ""}<div class="detail-actions">${btn("Copy message", "copy", "copy", "primary")}${c.url ? `<a class="button" href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">Open LinkedIn ${i("arrow-up-right")}</a>` : btn("Add LinkedIn link", "edit-person", "link", "", `data-id="${c.id}"`)}</div><div class="between" style="margin-top:8px">${btn("I sent it", "mark-sent", "check-check", "quiet")}${btn("Next week", "snooze", "clock", "quiet", `data-id="${c.id}"`)}</div></section>`;
+      )}</select>${btn(savedDraft ? "Try another draft" : "Help me start", "draft", "sparkles")}</div>${v ? `<div class="row">${btn("Direct", "variant", "", "quiet", 'data-id="0"')}${btn("Warmer", "variant", "", "quiet", 'data-id="1"')}</div>` : ""}<label><span class="hide">Message draft</span><textarea id="draft-text" aria-label="Message draft" placeholder="Start with a simple hello..." maxlength="8000">${esc(savedDraft)}</textarea></label><div class="composer-meta"><span class="draft-save-state"><span id="draft-saved" role="status" aria-live="polite"></span>${ib("Retry saving draft", "retry-draft", "refresh-cw", 'id="retry-draft" hidden')}</span><span id="word-count">${savedDraft.trim() ? savedDraft.trim().split(/\s+/).length : 0} words</span></div>${v ? `<div class="notice">${esc(v.grounding)}${v.needsReview ? " Review before sending." : ""}</div>` : !data.capabilities.ai ? '<p class="small-caption">Starter drafts are simple suggestions, not AI. Add one real detail to make yours personal.</p>' : ""}<div class="detail-actions">${btn("Copy message", "copy", "copy", "primary")}${c.url ? `<a class="button" href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">Open LinkedIn ${i("arrow-up-right")}</a>` : btn("Add LinkedIn link", "edit-person", "link", "", `data-id="${c.id}"`)}</div><div class="between" style="margin-top:8px">${btn("I sent it", "mark-sent", "check-check", "quiet")}${btn("Next week", "snooze", "clock", "quiet", `data-id="${c.id}"`)}</div></section>`;
   if (detailTab === "conversation")
     body = `<section>${messages.length ? messages.map((m) => `<div class="bubble ${m.direction}">${esc(m.text)}</div><div class="message-meta ${m.direction}">${m.direction === "out" ? "You" : esc(c.name.split(" ")[0])} · ${fmt(m.at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · ${m.source === "linkedin" ? "LinkedIn" : "Saved manually"}</div>`).join("") : '<p class="muted">No conversation saved yet.</p>'}</section><form class="reply-form" id="reply-form"><label>Save a message<textarea name="text" placeholder="Paste their reply here..." required maxlength="12000"></textarea></label><div class="between"><select name="direction" aria-label="Message direction"><option value="in">Their reply</option><option value="out">My message</option></select>${btn("Save message", "submit-reply", "plus", "primary")}</div></form>${c.needsReply ? `<div class="detail-actions">${btn("Draft a reply", "reply-draft", "sparkles")}${btn("No reply needed", "resolve", "check")}</div>` : ""}<form id="reminder-form" class="reply-form"><label>When should we remind you?<input type="datetime-local" name="reminderAt" value="${localDate(c.reminderAt)}" required></label><div class="detail-actions">${btn("Set reminder", "submit-reminder", "bell")}${btn("Add to calendar", "calendar", "calendar-days")}${c.reminderAt ? btn("Clear", "clear-reminder", "x", "quiet") : ""}</div><p class="small-caption">Calendar reminders can alert you even when Copilot is closed.</p></form>`;
   if (detailTab === "about")
@@ -563,6 +585,7 @@ function drawDetail(first = false) {
     overlay.innerHTML = html;
     icons();
   }
+  paintDraftStatus();
 }
 function localDate(value) {
   if (!dateValue(value)) return "";
@@ -706,17 +729,16 @@ document.addEventListener("input", (e) => {
     drafts.set(id, value);
     $("#word-count").textContent =
       `${value.trim() ? value.trim().split(/\s+/).length : 0} words`;
-    $("#draft-saved").textContent = "Saving...";
     clearTimeout(saveTimer);
-    pendingDraft = { id, value };
+    draftSaver.stage(id, value);
     saveTimer = setTimeout(async () => {
       try {
         await flushDraft();
-        if (selected === id && $("#draft-saved"))
-          $("#draft-saved").textContent = "Draft saved";
       } catch (e) {
-        notify("Draft couldn't save. Keep this window open and retry.", true);
-        if ($("#draft-saved")) $("#draft-saved").textContent = "Not saved";
+        notify(
+          "Draft couldn't save. Keep this tab open. You can still copy it or retry saving.",
+          true,
+        );
       }
     }, 500);
   }
@@ -772,9 +794,31 @@ document.addEventListener("click", async (e) => {
   if (target.disabled) return;
   target.disabled = true;
   try {
-    await flushDraft();
+    // Reading and copying must not depend on the save service being available.
+    const readOnly = [
+      "copy",
+      "close",
+      "person",
+      "conversation",
+      "detail-tab",
+      "reply-draft",
+      "people",
+      "connections",
+      "menu",
+      "search",
+      "next",
+      "prev",
+      "inbox-filter",
+      "circle-people",
+      "linkedin-help",
+      "ranking-info",
+    ];
+    if (!readOnly.includes(action)) await flushDraft();
     if (["people", "connections"].includes(action)) go(action);
-    else if (action === "menu") $(".sidebar").classList.toggle("open");
+    else if (action === "retry-draft") {
+      notify("Drafts saved.");
+      $("#draft-text")?.focus({ preventScroll: true });
+    } else if (action === "menu") $(".sidebar").classList.toggle("open");
     else if (action === "search") {
       go("people");
       setTimeout(() => $("#people-search")?.focus(), 40);
@@ -782,6 +826,8 @@ document.addEventListener("click", async (e) => {
     else if (action === "close") closeOverlay();
     else if (action === "demo") {
       demo = true;
+      drafts.clear();
+      variants.clear();
       loginInfo = null;
       data = demoState();
       persistDemo();
@@ -937,17 +983,15 @@ document.addEventListener("click", async (e) => {
       else result = await request("/api/draft", "POST", { contactId, intent });
       variants.set(contactId, result);
       drafts.set(contactId, result.drafts[0]);
-      await updateContact(
-        contactId,
-        { draft: result.drafts[0] },
-        { paint: false },
-      );
+      draftSaver.stage(contactId, result.drafts[0]);
       if (selected === contactId) drawDetail();
+      await flushDraft();
     } else if (action === "variant") {
       const value = variants.get(c.id).drafts[Number(id)];
       drafts.set(c.id, value);
-      await updateContact(c.id, { draft: value }, { paint: false });
+      draftSaver.stage(c.id, value);
       drawDetail();
+      await flushDraft();
     } else if (action === "copy") {
       const value = $("#draft-text").value;
       if (!value.trim()) throw new Error("Write a message first.");
@@ -957,8 +1001,10 @@ document.addEventListener("click", async (e) => {
       const value = $("#draft-text").value.trim();
       if (!value) throw new Error("Write a message first.");
       await addMessage(c, value, "out");
-      drafts.delete(c.id);
-      await updateContact(c.id, { draft: "" }, { paint: false });
+      drafts.set(c.id, "");
+      draftSaver.stage(c.id, "");
+      if (selected === c.id) drawDetail();
+      await flushDraft();
       closeOverlay();
       render();
       notify(`A little closer to ${c.name.split(" ")[0]}.`);

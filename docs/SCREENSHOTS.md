@@ -11,10 +11,17 @@ Current release assets are in `assets/screenshots/v2/`. All are actual Playwrigh
 | 05-inbox.png | Reply queue |
 | 06-import.png | US official-export path |
 | 07-mobile.png | Responsive mobile layout |
+| 08-draft-recovery.png | Simulated save outage with copying and retry available; synthetic test contact |
 
 Regenerate after a successful build:
 ```sh
 UPDATE_SCREENSHOTS=1 npm run test:browser
 ```
+
+Capture just the recovery asset, without replacing the existing demo gallery:
+```sh
+UPDATE_RECOVERY_SCREENSHOT=1 npm run test:browser
+```
+The recovery screenshot deliberately injects a 503 save response into a temporary local database. It is not a claim that the hosted app was experiencing an outage.
 
 Older top-level screenshots are retained as historical assets. The README uses only the current v2 captures. No personal contact data should ever appear in a committed screenshot.
