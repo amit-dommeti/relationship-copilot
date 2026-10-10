@@ -12,30 +12,32 @@ Updated October 10, 2026. Scope: Relationship Copilot only.
 
 ## Latest Verified Change
 
-Draft recovery retains each contact's latest unsaved edit until a successful response. Copying and read-only navigation do not wait on a broken save. The composer reports real save state, offers retry, and warns before unloading while edits remain. Generated drafts and empty-draft writes use the same queue. Workspace switching and data replacement still require successful pending saves.
+Slow draft suggestions cannot replace newer writing. Each request belongs to one contact in one workspace session. Editing a draft, changing intent, choosing a variant, recording a send, or saving new person/reply context invalidates the outstanding result. Workspace changes and confirmed imports discard old jobs. Loading state survives drawer/tab rendering; duplicate requests for the same contact are blocked. A background draft no longer redraws an unsaved Conversation form.
 
 Evidence actually collected:
 
-- Original browser failure reproduced: injected 503 prevented Copy message from running.
-- `npm test`: 19 passed, including five queue tests for failures, retry, coalescing, multiple contacts, and edits arriving during an in-flight write, plus an isolated clean-build regression.
+- Original browser failure reproduced: delayed simulated response overwrote a newer, already-saved handwritten draft.
+- `npm test`: 24 passed, including five generation-lifecycle tests plus the earlier save queue, import, security, and clean-build tests.
 - `npm run build`: passed.
-- `npm run test:browser`: passed across the existing core journey plus outage recovery, navigation, reload warning, persisted retry, empty drafts, and generated starter recovery.
-- Desktop/mobile recovery screenshots inspected. Published-source asset: `assets/screenshots/v2/08-draft-recovery.png`, synthetic test data only.
+- `npm run test:browser`: passed across the existing core journey plus delayed-response typing/cursor, intent, duplicate prevention, loading/error recovery, unrelated reply input, recorded sends, and workspace isolation.
+- Desktop/mobile pending-state screenshots inspected. New source asset: `assets/screenshots/v2/09-draft-in-progress.png`, synthetic test data and simulated response only.
 - No real LinkedIn data, paid AI calls, emails, or personal agents used.
 
-The first publication attempt failed because stale generated output contained a duplicate SQL file (`0000_relationships 2.sql`). The original source migration was unchanged. Reproduced stale-file retention in an isolated build fixture, then fixed the build to clean its generated `dist` directory first. The regression verifies stale files are excluded and source SQL is copied byte-for-byte. No database schema/history was rewritten and no records were deleted.
+Earlier draft recovery remains in place: retry retains the latest unsaved edit; copy/navigation work during save failures; unsaved changes trigger an unload warning. Builds clean generated output before packaging, preventing the stale duplicate SQL problem found in the prior release. Applied migrations remain unchanged.
 
 ## Deployment Context
 
 - Existing Site identity is tracked in `.openai/hosting.json`; never replace it or broaden access without approval.
 - App: https://relationship-copilot-amit.plumlyric7.chatgpt.site
 - Public source: https://github.com/amit-dommeti/relationship-copilot
-- The latest confirmed release before this iteration was the October 9 v2 rebuild. This file records the tested recovery change; use the native Site deployment result and GitHub head to establish publication, not this file alone.
+- The prior confirmed release is the October 10 recovery fix: Site source `f241a96b50eafb8e607dd9160d0eee83354d0290`, GitHub `be7a9c8eb406b2afddbda91da2da616d22b99c2d`, identical source trees. This file records the tested timing-safety change; use the native Site deployment result and GitHub head to establish its publication, not this file alone.
 - Use the Sites source helper to open/synchronize before edits and package the exact pushed source. Use connected GitHub write tools if local GitHub push credentials remain unavailable. Never store credentials or private contacts in the repository.
 
 ## Limits And Next Useful Checks
 
 - Unsaved drafts live in tab memory. Forced shutdown can lose them; unload warnings are not guaranteed on every mobile lifecycle event.
 - Chromium checked; other engines and a full screen-reader audit remain unverified.
-- Potential next reliability check: reproduce what happens if someone edits a message or switches workspaces while generation is still in flight. No claim that this separate race is fixed.
+- Stale suggestions are discarded rather than merged. Invalidation does not guarantee cancellation of provider work or charges. A same-contact job remains pending until its request finishes or times out.
+- These checks cover a single browser workspace session, not simultaneous editing across devices.
+- Next candidate reliability check: verify malformed backups cannot partially change contacts before reporting an import error. Reproduce before changing behavior; no finding is claimed yet.
 - Real-user import and live AI preference/latency evaluation still require authorization. No adoption, retention, or writing-quality uplift is claimed.

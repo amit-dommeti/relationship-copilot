@@ -32,3 +32,14 @@ Publication is reported from the hosting tool's result, not inferred from this c
 - [ ] Other browser engines and assistive-technology behavior audited.
 
 Unsaved drafts are retained only in the current tab. The unload warning is a browser safeguard, not crash recovery or guaranteed mobile protection.
+
+## Draft Timing Checks - October 10, 2026
+
+- [x] Newer-writing overwrite reproduced using a delayed simulated response.
+- [x] 24 unit/integration tests pass, including five generation job-lifecycle tests.
+- [x] Production build passes; existing save/import/reminder flows remain covered.
+- [x] Browser checks cover newer typing/cursor, intent changes, duplicate requests, loading/error recovery, unrelated reply input, recorded sends, and workspace isolation.
+- [x] Desktop/mobile loading-state captures reviewed with synthetic data only.
+- [ ] Live model writing-quality, cost, or response-time evaluation performed.
+
+These are application timing tests with simulated responses, not an AI quality evaluation.

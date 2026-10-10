@@ -18,6 +18,10 @@
 
 Evidence: five focused save-queue tests plus browser outage/retry/reload checks. This demonstrates engineering judgment, not a measured reduction in user abandonment.
 
+## Reliability Iteration: Your Edits Win
+
+"A generated suggestion should not have more authority than the person writing. I reproduced a delayed response overwriting a newer saved message, then gave each request a contact and workspace lifetime. New edits invalidate the suggestion, and navigation cannot create duplicate work or carry old results into a new workspace. I chose to discard stale suggestions rather than attempt a surprising automatic merge. The evidence is controlled timing tests, not better model writing or measured user impact."
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

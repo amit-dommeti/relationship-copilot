@@ -57,6 +57,7 @@ import {
 import { importFile, parseContacts, parseBackup } from "../shared/import.js";
 import { demoState } from "./demo.js";
 import { createDraftSaver } from "./draft-saver.js";
+import { createDraftJobs } from "./draft-jobs.js";
 const iconSet = {
   Sun,
   Users,
@@ -145,6 +146,7 @@ let drafts = new Map(),
   variants = new Map(),
   intent = "catch-up",
   loginInfo = null;
+const draftJobs = createDraftJobs();
 const draftSaver = createDraftSaver(
   (id, value) => updateContact(id, { draft: value }, { paint: false }),
   () => paintDraftStatus(),
@@ -173,6 +175,21 @@ function paintDraftStatus() {
     else if (status !== "saving") retry.hidden = true;
     retry.disabled = status === "saving";
   }
+}
+function paintDraftGeneration() {
+  const button = overlay.querySelector('[data-action="draft"]');
+  if (!button || !selected) return;
+  const busy = draftJobs.isBusy(selected);
+  const hasDraft = drafts.get(selected) ?? selectedContact()?.draft;
+  const label = busy
+    ? "Writing..."
+    : hasDraft
+      ? "Try another draft"
+      : "Help me start";
+  button.disabled = busy;
+  button.setAttribute("aria-busy", String(busy));
+  button.innerHTML = `${i(busy ? "refresh-cw" : "sparkles")} ${label}`;
+  icons();
 }
 window.addEventListener("beforeunload", (event) => {
   if (!draftSaver.hasUnsaved()) return;
@@ -586,6 +603,7 @@ function drawDetail(first = false) {
     icons();
   }
   paintDraftStatus();
+  paintDraftGeneration();
 }
 function localDate(value) {
   if (!dateValue(value)) return "";
@@ -727,6 +745,7 @@ document.addEventListener("input", (e) => {
     const id = selected,
       value = e.target.value;
     drafts.set(id, value);
+    draftJobs.invalidate(id);
     $("#word-count").textContent =
       `${value.trim() ? value.trim().split(/\s+/).length : 0} words`;
     clearTimeout(saveTimer);
@@ -756,7 +775,10 @@ document.addEventListener("change", async (e) => {
       page = 0;
       render();
     }
-    if (e.target.id === "draft-intent") intent = e.target.value;
+    if (e.target.id === "draft-intent") {
+      intent = e.target.value;
+      draftJobs.invalidate(selected);
+    }
     if (e.target.id === "import-file" && e.target.files[0])
       previewImport(await importFile(e.target.files[0]));
   } catch (e) {
@@ -792,8 +814,12 @@ document.addEventListener("click", async (e) => {
   const c = selectedContact();
   e.preventDefault();
   if (target.disabled) return;
+  const draftJob = action === "draft" && c ? draftJobs.begin(c.id) : null;
+  const requestedIntent = intent;
+  if (action === "draft" && !draftJob) return;
   target.disabled = true;
   try {
+    if (draftJob) paintDraftGeneration();
     // Reading and copying must not depend on the save service being available.
     const readOnly = [
       "copy",
@@ -814,6 +840,7 @@ document.addEventListener("click", async (e) => {
       "ranking-info",
     ];
     if (!readOnly.includes(action)) await flushDraft();
+    if (draftJob && !draftJobs.isCurrent(draftJob)) return;
     if (["people", "connections"].includes(action)) go(action);
     else if (action === "retry-draft") {
       notify("Drafts saved.");
@@ -825,6 +852,7 @@ document.addEventListener("click", async (e) => {
     } else if (action === "reload") await refresh();
     else if (action === "close") closeOverlay();
     else if (action === "demo") {
+      draftJobs.reset();
       demo = true;
       drafts.clear();
       variants.clear();
@@ -835,6 +863,7 @@ document.addEventListener("click", async (e) => {
       closeOverlay();
       render();
     } else if (action === "exit-demo") {
+      draftJobs.reset();
       demo = false;
       drafts.clear();
       variants.clear();
@@ -906,6 +935,7 @@ document.addEventListener("click", async (e) => {
       previewImport(parseContacts($("#paste-content").value));
     else if (action === "confirm-import") {
       if (!stagedImport) throw new Error("Choose a contact file first.");
+      draftJobs.reset();
       const group = $("#import-circle")?.value;
       const incoming = stagedImport.contacts.map((c) => ({
         ...c,
@@ -970,23 +1000,30 @@ document.addEventListener("click", async (e) => {
       notify("Backup downloaded. Keep it somewhere private.");
     } else if (action === "draft") {
       const contactId = c.id;
-      target.innerHTML = `${i("refresh-cw")} Writing...`;
-      icons();
       let result;
       if (demo)
         result = {
           mode: "starter",
-          drafts: [fallbackDraft(c, intent, 0), fallbackDraft(c, intent, 1)],
+          drafts: [
+            fallbackDraft(c, requestedIntent, 0),
+            fallbackDraft(c, requestedIntent, 1),
+          ],
           grounding: "Demo starter, written locally. Add a personal detail.",
           needsReview: true,
         };
-      else result = await request("/api/draft", "POST", { contactId, intent });
+      else
+        result = await request("/api/draft", "POST", {
+          contactId,
+          intent: requestedIntent,
+        });
+      if (!draftJobs.isCurrent(draftJob)) return;
       variants.set(contactId, result);
       drafts.set(contactId, result.drafts[0]);
       draftSaver.stage(contactId, result.drafts[0]);
-      if (selected === contactId) drawDetail();
+      if (selected === contactId && detailTab === "draft") drawDetail();
       await flushDraft();
     } else if (action === "variant") {
+      draftJobs.invalidate(c.id);
       const value = variants.get(c.id).drafts[Number(id)];
       drafts.set(c.id, value);
       draftSaver.stage(c.id, value);
@@ -1000,6 +1037,7 @@ document.addEventListener("click", async (e) => {
     } else if (action === "mark-sent") {
       const value = $("#draft-text").value.trim();
       if (!value) throw new Error("Write a message first.");
+      draftJobs.invalidate(c.id);
       await addMessage(c, value, "out");
       drafts.set(c.id, "");
       draftSaver.stage(c.id, "");
@@ -1040,6 +1078,7 @@ document.addEventListener("click", async (e) => {
         `<div class="stack"><p>Suggestions use your check-in rhythm, time since your last message, relationship notes, and close-connection stars.</p><p>Recent conversations and snoozed people stay out of this list. Replies waiting on you go to Inbox.</p><p>These are transparent local suggestions, not AI predictions about someone's willingness to respond. AI is used separately when you ask for a message draft.</p>${btn("Got it", "close", "check", "primary")}</div>`,
       );
   } catch (error) {
+    if (draftJob && !draftJobs.isCurrent(draftJob)) return;
     notify(
       error.name === "TimeoutError"
         ? "That took too long. Please try again."
@@ -1047,7 +1086,10 @@ document.addEventListener("click", async (e) => {
       true,
     );
   } finally {
-    if (target.isConnected) target.disabled = false;
+    if (draftJob) {
+      draftJobs.finish(draftJob);
+      paintDraftGeneration();
+    } else if (target.isConnected) target.disabled = false;
   }
 });
 document.addEventListener("submit", async (e) => {
@@ -1088,8 +1130,10 @@ document.addEventListener("submit", async (e) => {
         throw new Error(
           "Use a LinkedIn profile URL beginning https://www.linkedin.com/in/.",
         );
-      if (old) await updateContact(old.id, body, { paint: false });
-      else if (demo) {
+      if (old) {
+        draftJobs.invalidate(old.id);
+        await updateContact(old.id, body, { paint: false });
+      } else if (demo) {
         data.contacts.push(normalizeContact(body));
         persistDemo();
       } else data.contacts.push(await request("/api/contacts", "POST", body));
@@ -1128,6 +1172,7 @@ document.addEventListener("submit", async (e) => {
       notify("Circle saved. Your shared chapter stays with you.");
     }
     if (form.id === "reply-form") {
+      draftJobs.invalidate(selected);
       await addMessage(selectedContact(), values.text, values.direction);
       render();
       drawDetail();

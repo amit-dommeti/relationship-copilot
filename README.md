@@ -32,6 +32,8 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Draft recovery:** copying and browsing remain available when a save fails. Retry from the composer without retyping, and receive a browser warning before leaving with unsaved changes. Unsaved drafts stay in the current tab, not a durable offline store. [Recovery screenshot](assets/screenshots/v2/08-draft-recovery.png).
 
+**Your edits win:** writing or changing intent while a suggestion is loading makes that response stale. It will not replace your newer work. Requests stay with their contact and workspace, and reopening a contact keeps its loading state. [In-progress screenshot](assets/screenshots/v2/09-draft-in-progress.png).
+
 ## Try It Locally
 
 Requires Node.js 22.13+ (Node 24 LTS recommended).

@@ -2,6 +2,15 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Your Edits Win - October 10, 2026
+
+- Reproduced a late-response overwrite in Chromium: a simulated draft response replaced a newer, already-saved handwritten message.
+- Scoped each generation request to its contact and current workspace session. New typing, intent changes, choosing a variant, recording a send, or saving updated relationship/reply context invalidates the older response. Workspace changes and confirmed imports discard outstanding jobs.
+- Kept loading state across drawer/tab rendering and prevented duplicate requests for the same contact. Failures restore the actual drafting action rather than leaving an enabled button labeled Writing.
+- Avoided redrawing the Conversation form when a background draft completes, preserving its unsaved input and focus.
+- Verification: 24 unit/integration tests, production build, and Chromium browser flows with controlled delayed responses. Browser cases cover cursor/text preservation, loading state, duplicate prevention, error recovery, intent changes, unrelated form input, sent-draft protection, and switching away/back while old and new requests share a contact ID.
+- Tradeoff: stale results are discarded, not merged into human writing. An invalidated provider request can still finish and incur its normal cost; this is result isolation, not a billing-cancellation guarantee. No live model call or writing-quality improvement is claimed.
+
 ## Draft recovery - October 10, 2026
 
 - Reproduced a save failure in the browser: after a contact update returned 503, Copy message never reached the clipboard action. The failed promise also blocked other actions, and reopening the composer mislabeled the draft as saved.
