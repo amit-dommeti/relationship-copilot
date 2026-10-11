@@ -42,6 +42,14 @@ Rows are packed into UTF-8 JSON parameters of at most 512 KiB, then inserted thr
 
 The UI clears the old preview before reading another file, announces a persistent error, and ignores late results from a superseded selection or closed dialog.
 
+## Conversation Entry Recovery
+
+`web/reply-buffer.js` keeps unsaved message text and direction in memory, keyed by workspace and contact. Rendering the Conversation panel restores that entry. Each save captures the person, values, and edit revision; only an acknowledgement for unchanged input clears the buffer. A slow response preserves newer typing and its cursor, and finishing one person's save does not redraw another person's form. Per-person pending state blocks duplicate submissions even after the drawer is reopened.
+
+Status is announced politely and linked to the message field. Reload/close requests trigger a browser unload warning while text or a save remains pending. Switching between private and demo workspaces redirects to an unsaved entry instead of discarding it; a confirmed import waits for outstanding message saves. No new browser-persistent cache or server autosave is introduced for these entries.
+
+This does not provide exactly-once message recording after a lost network acknowledgement: the existing message endpoint assigns a new ID on each request. Retry after an ambiguous response may duplicate history. That requires a separate idempotency change and fault-injection test. Tests in this iteration simulate rejection before a write, successful slow saves, and newer edits, not that network ambiguity.
+
 ## Known Boundaries
 
 This is not end-to-end encrypted. The hosting operator can access stored data. Protect backups and hosting access. Per-process request limiting is modest protection for an owner-private app, not a distributed anti-abuse system. Browser notifications require an open app; calendar alarms are delegated to the user's calendar. No scheduled LinkedIn sync exists.

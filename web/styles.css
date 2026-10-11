@@ -1419,7 +1419,8 @@ input[type="checkbox"] {
 .composer-meta #word-count {
   flex-shrink: 0;
 }
-.composer-meta .save-error {
+.composer-meta .save-error,
+.reply-save-status.save-error {
   color: #ffc8ad;
 }
 #retry-draft[hidden] {
@@ -1470,6 +1471,9 @@ input[type="checkbox"] {
   font-size: 10px;
   color: var(--muted);
   line-height: 1.7;
+}
+.reply-save-status {
+  min-height: 34px;
 }
 .toast {
   position: fixed;

@@ -139,6 +139,7 @@ export async function checkDraftGeneration(page, base) {
     true,
   );
   assert.equal(await persistedDraft(), suggestion);
+  await page.getByLabel("Save a message").fill("");
   await page.getByRole("tab", { name: "Write a hello", exact: true }).click();
   assert.equal(await draft().inputValue(), suggestion);
 

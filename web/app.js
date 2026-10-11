@@ -55,6 +55,7 @@ import {
   DAY,
 } from "../shared/domain.js";
 import { importFile, parseContacts, parseBackup } from "../shared/import.js";
+import { createReplyBuffer } from "./reply-buffer.js";
 import { demoState } from "./demo.js";
 import { createDraftSaver } from "./draft-saver.js";
 import { createDraftJobs } from "./draft-jobs.js";
@@ -147,6 +148,8 @@ let drafts = new Map(),
   intent = "catch-up",
   loginInfo = null;
 const draftJobs = createDraftJobs();
+const replyBuffer = createReplyBuffer();
+const workspace = () => (demo ? "demo" : "private");
 const draftSaver = createDraftSaver(
   (id, value) => updateContact(id, { draft: value }, { paint: false }),
   () => paintDraftStatus(),
@@ -192,10 +195,29 @@ function paintDraftGeneration() {
   icons();
 }
 window.addEventListener("beforeunload", (event) => {
-  if (!draftSaver.hasUnsaved()) return;
+  if (!draftSaver.hasUnsaved() && !replyBuffer.hasUnsaved()) return;
   event.preventDefault();
   event.returnValue = "";
 });
+function paintReplyStatus() {
+  const form = $("#reply-form");
+  if (!form) return;
+  const status = replyBuffer.status(workspace(), form.dataset.contactId);
+  const busy = status === "saving";
+  const button = form.querySelector('[data-action="submit-reply"]');
+  button.disabled = busy;
+  button.setAttribute("aria-busy", String(busy));
+  const label = form.querySelector('[role="status"]');
+  label.textContent =
+    status === "error"
+      ? "Save not confirmed. Your text is still here."
+      : busy
+        ? "Saving message..."
+        : status === "unsaved"
+          ? "Not saved. Keep this tab open."
+          : "";
+  label.classList.toggle("save-error", status === "error");
+}
 const initials = (name) =>
   name
     .split(/\s+/)
@@ -560,6 +582,20 @@ function openPerson(id, tab = "draft") {
 function drawDetail(first = false) {
   const c = selectedContact();
   if (!c) return;
+  const previousForm = $("#reply-form");
+  const activeField =
+    previousForm?.dataset.contactId === c.id &&
+    previousForm.contains(document.activeElement)
+      ? document.activeElement
+      : null;
+  const focus = activeField?.name
+    ? {
+        name: activeField.name,
+        start: activeField.selectionStart,
+        end: activeField.selectionEnd,
+        scroll: activeField.scrollTop,
+      }
+    : null;
   const groups = circlesFor(c),
     messages = data.messages.filter((m) => m.contactId === c.id),
     savedDraft = drafts.get(c.id) ?? c.draft ?? "",
@@ -604,6 +640,28 @@ function drawDetail(first = false) {
   }
   paintDraftStatus();
   paintDraftGeneration();
+  const replyForm = $("#reply-form");
+  if (replyForm) {
+    replyForm.dataset.contactId = c.id;
+    const saved = replyBuffer.values(workspace(), c.id);
+    replyForm.elements.text.value = saved.text;
+    replyForm.elements.direction.value = saved.direction;
+    const status = document.createElement("p");
+    status.className = "small-caption reply-save-status";
+    status.id = "reply-save-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    replyForm.append(status);
+    replyForm.elements.text.setAttribute("aria-describedby", status.id);
+    paintReplyStatus();
+    const field = focus && replyForm.elements.namedItem(focus.name);
+    if (field) {
+      field.focus({ preventScroll: true });
+      if (typeof focus.start === "number")
+        field.setSelectionRange(focus.start, focus.end);
+      field.scrollTop = focus.scroll;
+    }
+  }
 }
 function localDate(value) {
   if (!dateValue(value)) return "";
@@ -749,6 +807,14 @@ document.addEventListener("keydown", (e) => {
   }
 });
 document.addEventListener("input", (e) => {
+  const replyForm = e.target.closest("#reply-form");
+  if (replyForm) {
+    replyBuffer.stage(workspace(), replyForm.dataset.contactId, {
+      text: replyForm.elements.text.value,
+      direction: replyForm.elements.direction.value,
+    });
+    paintReplyStatus();
+  }
   if (e.target.id === "people-search") {
     query = e.target.value;
     page = 0;
@@ -825,6 +891,8 @@ document.addEventListener("click", async (e) => {
   if (!target) return;
   const action = target.dataset.action,
     id = target.dataset.id;
+  const replyFormToSubmit =
+    action === "submit-reply" ? target.closest("form") : null;
   const c = selectedContact();
   e.preventDefault();
   if (target.disabled) return;
@@ -834,6 +902,16 @@ document.addEventListener("click", async (e) => {
   target.disabled = true;
   try {
     if (draftJob) paintDraftGeneration();
+    if (["demo", "exit-demo"].includes(action) && replyBuffer.hasUnsaved()) {
+      openPerson(replyBuffer.firstUnsaved(workspace()), "conversation");
+      throw new Error(
+        "Save or clear this message before switching workspaces.",
+      );
+    }
+    if (action === "confirm-import" && replyBuffer.hasPending())
+      throw new Error(
+        "Wait for your message to finish saving before importing.",
+      );
     // Reading and copying must not depend on the save service being available.
     const readOnly = [
       "copy",
@@ -1077,8 +1155,10 @@ document.addEventListener("click", async (e) => {
         overlay.querySelector('[name="reminderAt"]')?.value || c.reminderAt;
       download(reminderCalendar(c, when), "catch-up.ics", "text/calendar");
       notify("Open the calendar file to add your reminder.");
-    } else if (action === "submit-reply") $("#reply-form").requestSubmit();
-    else if (action === "submit-reminder") $("#reminder-form").requestSubmit();
+    } else if (action === "submit-reply") {
+      if (replyFormToSubmit?.isConnected) replyFormToSubmit.requestSubmit();
+    } else if (action === "submit-reminder")
+      $("#reminder-form").requestSubmit();
     else if (action === "submit-settings") $("#settings-form").requestSubmit();
     else if (action === "linkedin-help") linkedInHelp();
     else if (action === "agent-brief") {
@@ -1104,6 +1184,7 @@ document.addEventListener("click", async (e) => {
       draftJobs.finish(draftJob);
       paintDraftGeneration();
     } else if (target.isConnected) target.disabled = false;
+    paintReplyStatus();
   }
 });
 document.addEventListener("submit", async (e) => {
@@ -1120,10 +1201,16 @@ document.addEventListener("submit", async (e) => {
   )
     return;
   e.preventDefault();
-  const button = form.querySelector('[type="submit"],button');
-  if (button) button.disabled = true;
   const f = new FormData(form),
     values = Object.fromEntries(f.entries());
+  const replyJob =
+    form.id === "reply-form"
+      ? replyBuffer.begin(workspace(), form.dataset.contactId, values)
+      : null;
+  if (form.id === "reply-form" && !replyJob) return;
+  const button = form.querySelector('[type="submit"],button');
+  if (button) button.disabled = true;
+  paintReplyStatus();
   try {
     if (form.id === "login-form") {
       await request("/api/login", "POST", values);
@@ -1186,10 +1273,12 @@ document.addEventListener("submit", async (e) => {
       notify("Circle saved. Your shared chapter stays with you.");
     }
     if (form.id === "reply-form") {
-      draftJobs.invalidate(selected);
-      await addMessage(selectedContact(), values.text, values.direction);
+      const person = data.contacts.find((c) => c.id === replyJob.contactId);
+      draftJobs.invalidate(person.id);
+      await addMessage(person, replyJob.values.text, replyJob.values.direction);
+      replyBuffer.finish(replyJob, true);
       render();
-      drawDetail();
+      if (selected === person.id && detailTab === "conversation") drawDetail();
       notify(
         values.direction === "in"
           ? "Reply saved. It's in your reply queue."
@@ -1227,9 +1316,11 @@ document.addEventListener("submit", async (e) => {
       notify("Preferences saved.");
     }
   } catch (error) {
+    if (replyJob) replyBuffer.finish(replyJob, false);
     notify(error.message, true);
   } finally {
     if (button?.isConnected) button.disabled = false;
+    paintReplyStatus();
   }
 });
 const notified = new Set();

@@ -2,6 +2,17 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Preserve Unsaved Replies - October 10, 2026
+
+- Reproduced a browser regression: setting a reminder erased the unsaved message text in the same Conversation panel.
+- Added tab-memory reply buffers keyed by person and workspace, preserving text and direction through reminder changes, tab navigation, and closing/reopening the drawer. No new persistent private-data cache was added.
+- Captured the person and exact edit revision for each save. Slow successful saves clear only unchanged input; newer typing and cursor position remain intact. Completing a background save does not redraw a different person's form.
+- Kept pending status through redraws and blocked duplicate submissions while a request is outstanding. Failed saves retain the text with a persistent status. Unload warnings include unsaved replies; switching workspaces brings the unsaved entry back into view for saving or clearing.
+- Verified 37 unit/integration tests, production build, and full Chromium core-journey checks. Six new buffer tests cover identity isolation, duplicate prevention, failure/retry, newer input, empty edits, and stale completions. Browser checks cover the reproduced reminder failure, navigation, person isolation, controlled slow/failing saves, cursor preservation, reload warning, and the workspace-switch safeguard.
+- Desktop/mobile failure-state captures use synthetic text only. No real messages, LinkedIn access, paid services, model calls, or audience changes were involved.
+- Limits: tab crash/forced shutdown can lose unsaved entries. Pending-request duplicate prevention is not exactly-once delivery: an unacknowledged server write could still duplicate on retry. Unsaved reminder/person/settings forms are not covered by this reply-specific buffer. No user outcome or model-quality uplift is claimed.
+- Publication is established by the native Site result and GitHub head, not inferred from this log.
+
 ## All-Or-Nothing Imports - October 10, 2026
 
 - Reproduced partial mutation with an API regression: a backup with a valid company update and malformed message contact ID returned an error after changing the saved company.

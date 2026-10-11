@@ -57,3 +57,19 @@ These are application timing tests with simulated responses, not an AI quality e
 - [x] Desktop/mobile error captures reviewed; committed screenshot uses synthetic data only.
 - [ ] Hosted D1 load/fault-injection testing performed.
 - [ ] Simultaneous imports and editing from separate devices tested.
+
+## Reply Entry Checks - October 10, 2026
+
+- [x] Unsaved reply erased by setting a reminder reproduced before the fix.
+- [x] 37 unit/integration tests pass, including six reply-buffer tests.
+- [x] Production build and full Chromium core-journey checks pass.
+- [x] Reply text/direction survive reminder changes, tabs, closing/reopening, and visiting another person.
+- [x] Duplicate submissions blocked while pending, including after reopening the drawer.
+- [x] Failed save retains text; successful retry clears only acknowledged, unchanged input.
+- [x] Slow save preserves newer text/cursor and another person's entry.
+- [x] Unload warning and explicit workspace-switch guard checked.
+- [x] Desktop/mobile failure-state captures visually reviewed with synthetic data.
+- [ ] Lost-acknowledgement retry is exactly-once.
+- [ ] Other form types have the same unsaved-entry protection.
+
+Reply buffers exist only in the current tab and require an explicit save. They are not crash recovery, inbox sync, or automatic sending.

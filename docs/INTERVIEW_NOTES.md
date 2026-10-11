@@ -28,6 +28,12 @@ Evidence: five focused save-queue tests plus browser outage/retry/reload checks.
 
 Evidence: a failing-before/fixed-after regression, rollback and identity tests, a synthetic 10,000-contact local test, and browser rejection/retry checks. No production data-loss rate or user trust uplift was measured.
 
+## Reliability Iteration: Protect The Work Between Saves
+
+"I tested a natural sequence: paste a reply, then set a reminder before saving it. The reminder worked, but its screen update erased the reply. I separated the unsaved entry from the displayed form and kept it attached to the right person. Then I tested slow saves, new typing, duplicate clicks, and switching between people. I chose tab-only recovery to avoid adding another persistent copy of private conversations, and documented the crash-recovery and ambiguous-retry limits."
+
+Evidence: a failing-before/fixed-after browser test, six focused buffer tests, and synthetic failure/timing checks. No reduction in real-world message loss has been measured.
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

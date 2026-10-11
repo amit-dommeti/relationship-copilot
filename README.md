@@ -36,6 +36,8 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Safer restores:** workspace imports validate the complete backup before saving. Contacts, circles, messages, and import history commit together or not at all. A rejected file clears the previous preview, explains the problem, and leaves your saved records unchanged. [Import safety screenshot](assets/screenshots/v2/10-import-safety.png).
 
+**Keep the reply you were saving:** unsaved Conversation entries stay with their person when you set a reminder, switch tabs, or close and reopen the drawer. Failed saves retain the text, and a delayed save cannot clear newer typing. Entries stay in this tab until you explicitly save them. [Reply recovery screenshot](assets/screenshots/v2/11-reply-recovery.png).
+
 ## Try It Locally
 
 Requires Node.js 22.13+ (Node 24 LTS recommended).
