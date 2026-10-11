@@ -2,6 +2,17 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Retry Without Duplicate History - October 10, 2026
+
+- Reproduced the missing retry contract: two submissions of the same identified recording produced two history entries because the endpoint replaced the identity with a new one each time.
+- Added optional, validated save identities and a shared tab-memory recorder for replies and manually recorded sends. Unchanged retries retain their identity across a rejected/lost acknowledgement or failed state refresh. Confirmed new recordings and changed payloads get new identities, preserving intentional repeated messages.
+- Guarded the contact-state update and message insert in one transaction. Replaying a stored identity returns the original record and timestamp without resetting later state. Conflicting reuse is rejected; owner scoping and compatibility with older clients are retained. Applied migrations remain unchanged.
+- Verified 48 unit/integration tests, including six API/storage tests and five recorder tests. Cases cover matching and conflicting concurrent requests, subsequent state preservation, owner isolation, invalid identities, legacy clients, rollback after a failed insert, and retry lifecycle behavior.
+- Production build and full Chromium core-journey checks passed. New browser fault injection performed the actual local write, then dropped its response, reopened the contact, and retried. Also verified failed-refresh recovery, later state preservation, intentional repeat recording, and the "I sent it" path. Existing desktop/tablet/mobile flows remain passing.
+- No visible layout change required a new screenshot. Existing synthetic-data captures remain representative. No real contacts, LinkedIn messages, live model calls, paid services, or access-policy changes were involved.
+- Boundary: request identity remains in the current tab only. Reload, a changed entry, or another tab is not guaranteed to recover the same identity. This is not universal exactly-once delivery, cloud fault testing, or evidence of user impact.
+- Publication is established by the native Site result and GitHub head, not inferred from this log.
+
 ## Preserve Unsaved Replies - October 10, 2026
 
 - Reproduced a browser regression: setting a reminder erased the unsaved message text in the same Conversation panel.

@@ -48,7 +48,17 @@ The UI clears the old preview before reading another file, announces a persisten
 
 Status is announced politely and linked to the message field. Reload/close requests trigger a browser unload warning while text or a save remains pending. Switching between private and demo workspaces redirects to an unsaved entry instead of discarding it; a confirmed import waits for outstanding message saves. No new browser-persistent cache or server autosave is introduced for these entries.
 
-This does not provide exactly-once message recording after a lost network acknowledgement: the existing message endpoint assigns a new ID on each request. Retry after an ambiguous response may duplicate history. That requires a separate idempotency change and fault-injection test. Tests in this iteration simulate rejection before a write, successful slow saves, and newer edits, not that network ambiguity.
+## Safe Message Retries
+
+`web/message-recorder.js` assigns a random save identity to each recording attempt. An unchanged retry in the same tab keeps that identity until both the write and following state refresh succeed. Concurrent identical calls share one pending request. Changed text/direction after a failure or a new recording after confirmation gets a new identity; this is not permanent text deduplication. The helper is shared by Conversation saves and the manually recorded "I sent it" action.
+
+The message endpoint accepts an optional UUID-v4 `requestId`. Existing clients without it still work but do not receive retry protection. New IDs are namespaced as `manual-<requestId>` in the existing owner-scoped message key; no migration or rewriting of historical messages is required.
+
+The contact-state update runs only when that owner's message key does not exist, followed by insertion in the same transaction. A replay cannot reset later reminders, drafts, snoozes, or reply state. The server returns the stored record, including its original timestamp. Reusing an identity for different normalized content, direction, person, source, or supplied date returns a conflict instead of silently acknowledging another message. Local concurrent-request and rollback tests exercise the guard.
+
+The receipt read uses the current ordinary D1 binding. Cloudflare documents that [queries without the Sessions API use the primary database](https://developers.cloudflare.com/d1/worker-api/d1-database/). Preserve read-after-write consistency if introducing read replicas later.
+
+Limits: the browser's unconfirmed identity is tab-memory only. Reloading, changing the failed entry, or recording from another tab can create a distinct event. This is idempotency for a retained request identity, not universal exactly-once delivery. Nothing is sent externally. Browser tests drop a response after an actual temporary SQLite write and separately reject the following refresh; production D1 fault injection has not been performed.
 
 ## Known Boundaries
 

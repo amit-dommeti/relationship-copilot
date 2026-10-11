@@ -38,6 +38,8 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Keep the reply you were saving:** unsaved Conversation entries stay with their person when you set a reminder, switch tabs, or close and reopen the drawer. Failed saves retain the text, and a delayed save cannot clear newer typing. Entries stay in this tab until you explicitly save them. [Reply recovery screenshot](assets/screenshots/v2/11-reply-recovery.png).
 
+**Retry without duplicate history:** retrying an unchanged message in the same tab reuses its save identity, even if the original save succeeded but its confirmation or following refresh failed. This covers saved replies and manually recorded sends, not LinkedIn delivery. After a reload, changed text, or a different tab, review history before recording again.
+
 ## Try It Locally
 
 Requires Node.js 22.13+ (Node 24 LTS recommended).

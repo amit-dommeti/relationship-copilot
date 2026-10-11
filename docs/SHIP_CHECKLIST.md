@@ -73,3 +73,18 @@ These are application timing tests with simulated responses, not an AI quality e
 - [ ] Other form types have the same unsaved-entry protection.
 
 Reply buffers exist only in the current tab and require an explicit save. They are not crash recovery, inbox sync, or automatic sending.
+
+## Message Retry Checks - October 10, 2026
+
+- [x] Duplicate recording reproduced before implementing the save-identity contract.
+- [x] 48 unit/integration tests pass, including eleven new retry tests.
+- [x] Matching retries return the original record/timestamp; conflicting reuse rejects without state changes.
+- [x] Local concurrent calls, owner isolation, invalid identities, legacy clients, and insert-failure rollback checked.
+- [x] Production build and full Chromium core-journey suite pass.
+- [x] Browser drops an acknowledgement after the actual local write, then verifies one record after retry.
+- [x] Failed state refresh, intentional repeated text, later state preservation, and manually recorded send retries checked.
+- [x] Applied migrations, Site identity, and private audience unchanged.
+- [ ] Retained retry identity across reloads/devices implemented.
+- [ ] Production D1 fault-injection/load test performed.
+
+The prior reply iteration's lost-acknowledgement gap is now covered for retained request identities. This is not a universal exactly-once guarantee or an outbound messaging integration.

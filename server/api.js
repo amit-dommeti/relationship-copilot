@@ -139,10 +139,28 @@ export async function api(request, env, identity) {
       }
       if (action === "messages" && method === "POST") {
         const b = await readJSON(request, 14000);
+        if (
+          b.requestId !== undefined &&
+          (typeof b.requestId !== "string" ||
+            !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+              b.requestId,
+            ))
+        )
+          return json(
+            {
+              error:
+                "The save identity is invalid. Reload before trying again.",
+            },
+            400,
+          );
         if (!text(b.text, 12000))
           return json({ error: "Add a message first." }, 400);
         return json(
-          await store.message(owner, c, { ...b, id: uid(), source: "manual" }),
+          await store.message(owner, c, {
+            ...b,
+            id: b.requestId ? `manual-${b.requestId.toLowerCase()}` : uid(),
+            source: "manual",
+          }),
           201,
         );
       }

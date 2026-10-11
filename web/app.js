@@ -56,6 +56,7 @@ import {
 } from "../shared/domain.js";
 import { importFile, parseContacts, parseBackup } from "../shared/import.js";
 import { createReplyBuffer } from "./reply-buffer.js";
+import { createMessageRecorder } from "./message-recorder.js";
 import { demoState } from "./demo.js";
 import { createDraftSaver } from "./draft-saver.js";
 import { createDraftJobs } from "./draft-jobs.js";
@@ -149,6 +150,7 @@ let drafts = new Map(),
   loginInfo = null;
 const draftJobs = createDraftJobs();
 const replyBuffer = createReplyBuffer();
+const messageRecorder = createMessageRecorder();
 const workspace = () => (demo ? "demo" : "private");
 const draftSaver = createDraftSaver(
   (id, value) => updateContact(id, { draft: value }, { paint: false }),
@@ -195,7 +197,12 @@ function paintDraftGeneration() {
   icons();
 }
 window.addEventListener("beforeunload", (event) => {
-  if (!draftSaver.hasUnsaved() && !replyBuffer.hasUnsaved()) return;
+  if (
+    !draftSaver.hasUnsaved() &&
+    !replyBuffer.hasUnsaved() &&
+    !messageRecorder.hasPending()
+  )
+    return;
   event.preventDefault();
   event.returnValue = "";
 });
@@ -332,12 +339,19 @@ async function addMessage(c, text, direction) {
       { paint: false },
     );
   } else {
-    await request(
-      `/api/contacts/${encodeURIComponent(c.id)}/messages`,
-      "POST",
+    await messageRecorder.run(
+      workspace(),
+      c.id,
       { text, direction },
+      async (body) => {
+        await request(
+          `/api/contacts/${encodeURIComponent(c.id)}/messages`,
+          "POST",
+          body,
+        );
+        await refresh(false);
+      },
     );
-    await refresh(false);
   }
 }
 function getRoute() {
@@ -911,6 +925,13 @@ document.addEventListener("click", async (e) => {
     if (action === "confirm-import" && replyBuffer.hasPending())
       throw new Error(
         "Wait for your message to finish saving before importing.",
+      );
+    if (
+      ["demo", "exit-demo", "confirm-import"].includes(action) &&
+      messageRecorder.hasPending()
+    )
+      throw new Error(
+        "Wait for your message to finish saving before switching workspaces or importing.",
       );
     // Reading and copying must not depend on the save service being available.
     const readOnly = [

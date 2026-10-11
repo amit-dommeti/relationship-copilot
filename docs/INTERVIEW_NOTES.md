@@ -34,6 +34,12 @@ Evidence: a failing-before/fixed-after regression, rollback and identity tests, 
 
 Evidence: a failing-before/fixed-after browser test, six focused buffer tests, and synthetic failure/timing checks. No reduction in real-world message loss has been measured.
 
+## Reliability Iteration: A Failed Confirmation Is Not A Failed Save
+
+"Disabling double-clicks did not cover the harder case: the server saved a reply, but the confirmation was lost. I reproduced duplicate history on retry, then gave each recording a reusable identity. I tested not just duplicates, but whether an old retry could reset a newer reminder or reply decision. I also kept intentional repeated messages possible and documented that the protection depends on retaining the same identity in the current tab."
+
+Evidence: a failing-before/fixed-after API regression, transaction/concurrency tests, and browser fault injection after actual local writes. No live LinkedIn delivery or measured production incident reduction is claimed.
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

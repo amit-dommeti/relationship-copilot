@@ -186,42 +186,61 @@ export class Store {
       at,
       source: raw.source === "linkedin" ? "linkedin" : "manual",
     };
-    const old = await this.stmt(
-      "SELECT id FROM messages WHERE owner=? AND id=?",
-      owner,
-      m.id,
-    ).first();
-    if (old) return m;
-    // Update the current row, not a stale copy captured before another message arrived.
+    // The guarded update and insert share a transaction. Replays cannot reset
+    // newer reply state, reminders or drafts, even when requests arrive together.
     const now = nowISO();
     const fields =
       m.direction === "out"
         ? ", '$.lastContactAt', ?, '$.reminderAt', '', '$.draft', ''"
         : "";
     const statements = [
+      ...(updateState
+        ? [
+            this.stmt(
+              `UPDATE contacts SET data=json_set(data, '$.needsReply', json(?), '$.latestMessageAt', ?, '$.snoozedUntil', '', '$.updatedAt', ? ${fields}), updated_at=? WHERE owner=? AND id=? AND COALESCE(json_extract(data,'$.latestMessageAt'),'') <= ? AND COALESCE(json_extract(data,'$.lastContactAt'),'') <= ? AND NOT EXISTS (SELECT 1 FROM messages WHERE owner=? AND id=?)`,
+              m.direction === "in" ? "true" : "false",
+              at,
+              now,
+              ...(m.direction === "out" ? [at] : []),
+              now,
+              owner,
+              contact.id,
+              at,
+              at,
+              owner,
+              m.id,
+            ),
+          ]
+        : []),
       this.stmt(
-        "INSERT OR IGNORE INTO messages(owner,id,contact_id,data,created_at) VALUES(?,?,?,?,?)",
+        "INSERT INTO messages(owner,id,contact_id,data,created_at) VALUES(?,?,?,?,?) ON CONFLICT(owner,id) DO NOTHING",
         owner,
         m.id,
         contact.id,
         JSON.stringify(m),
         at,
       ),
-      this.stmt(
-        `UPDATE contacts SET data=json_set(data, '$.needsReply', json(?), '$.latestMessageAt', ?, '$.snoozedUntil', '', '$.updatedAt', ? ${fields}), updated_at=? WHERE owner=? AND id=? AND COALESCE(json_extract(data,'$.latestMessageAt'),'') <= ? AND COALESCE(json_extract(data,'$.lastContactAt'),'') <= ?`,
-        m.direction === "in" ? "true" : "false",
-        at,
-        now,
-        ...(m.direction === "out" ? [at] : []),
-        now,
-        owner,
-        contact.id,
-        at,
-        at,
-      ),
     ];
-    await this.db.batch(updateState ? statements : statements.slice(0, 1));
-    return m;
+    await this.db.batch(statements);
+    const row = await this.stmt(
+      "SELECT data FROM messages WHERE owner=? AND id=?",
+      owner,
+      m.id,
+    ).first();
+    const saved = JSON.parse(row.data);
+    if (
+      ["contactId", "text", "direction", "source"].some(
+        (field) => saved[field] !== m[field],
+      ) ||
+      (dateValue(raw.at) && saved.at !== m.at)
+    )
+      throw Object.assign(
+        new Error(
+          "This save identity already belongs to a different message. Your saved history was not changed.",
+        ),
+        { status: 409 },
+      );
+    return saved;
   }
   async snapshot(owner) {
     const [contacts, circles, messages, settings] = await Promise.all([
