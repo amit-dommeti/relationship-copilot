@@ -112,6 +112,7 @@ export function parseBackup(input) {
         at: c.lastReplyAt,
       });
   return validateImport({
+    kind: "backup",
     contacts,
     circles,
     messages,

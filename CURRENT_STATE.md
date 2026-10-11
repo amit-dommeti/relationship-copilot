@@ -1,6 +1,6 @@
 # Current State
 
-Updated October 10, 2026. Scope: Relationship Copilot only.
+Updated October 11, 2026. Scope: Relationship Copilot only.
 
 ## Product And Boundaries
 
@@ -12,27 +12,28 @@ Updated October 10, 2026. Scope: Relationship Copilot only.
 
 ## Latest Verified Change
 
-"I sent it" now captures the clicked person, text, and edit revision before autosave. A late completion preserves newer writing and its cursor, including text edited back to the same value. It cannot close another person's drawer or redraw an unrelated Conversation form. The per-person pending lock survives reopening and covers the complete recording/cleanup operation.
+Demo backup restores now include saved messages, circles, writing preferences, and import metadata, using the same preparation rules as the private workspace. Existing relationship context, identified history, notification settings, and demo capabilities remain protected. The preview explains the backup contents and demo-only destination. Browser storage must succeed before the in-memory demo is replaced; errors remain in the import dialog for retry.
 
 Evidence actually collected:
 
-- Original browser failure reproduced: a slow recorded-send completion erased a newer, already-saved draft.
-- `npm test`: 49 passed, including a new per-contact revision test plus all prior API/storage, import, retry, and buffer tests.
+- Original browser failure reproduced: Restore backup reported success but restored zero of one expected message in demo mode.
+- `npm test`: 54 passed, including five new demo/private-store parity, repeated restore, non-mutation, contact-only, and legacy-backup tests. Existing transactional rollback, identity, query-bound, and owner-isolation tests remain passing.
 - `npm run build`: passed.
-- `npm run test:browser`: passed across the existing desktop/tablet/mobile core journey. New checks cover newer typing/cursor, edited-back text, pending locks after reopening, unrelated forms, switching people before autosave finishes, typing during empty-draft cleanup, and a lost acknowledgement after an actual local write.
-- Focused browser check also passed independently; inspected desktop/mobile pending-recording captures with synthetic data. No layout redesign, so existing committed portfolio screenshots remain representative.
+- Focused Chromium restore check passed: complete history/preferences restore, reload persistence, repeat deduplication, orphan rejection, injected browser-storage failure/retry, and no private API writes or private-workspace changes.
+- `npm run test:browser`: full core-journey suite passed across desktop/tablet/mobile, including the new demo restore and existing private restore checks.
+- Inspected desktop/mobile backup preview captures. Added `assets/screenshots/v2/12-backup-preview.png` with synthetic data only.
 - No real LinkedIn data, paid AI calls, emails, or personal agents used.
 
 Earlier draft protections remain in place: late suggestions cannot replace newer writing or redraw an unsaved reply form; duplicate generation requests are blocked. Retry retains the latest unsaved edit; copy/navigation work during save failures; unsaved changes trigger an unload warning. Builds clean generated output before packaging. Applied migrations remain unchanged.
 
-Prior import safety remains in place: full validation, one transactional batch for all restored records and metadata, stable-ID matching, safe file-preview replacement, and rejection without partial changes. Reply buffers still preserve unsaved text/direction through reminder changes and navigation. Unchanged message retries retain their identity in the current tab and preserve later conversation state. This iteration changes only browser coordination, not the message API, schema, applied migrations, or AI configuration.
+Prior import safety remains in place: full validation, one transactional batch for all restored records and metadata, stable-ID matching, safe file-preview replacement, and rejection without partial changes. Reply buffers preserve unsaved text/direction through reminder changes and navigation. Unchanged message retries retain their identity in the current tab and preserve later conversation state. Recorded-send completion protects newer writing and unrelated drawers. This iteration shares import preparation between server and demo without changing the message API, schema, applied migrations, or AI configuration.
 
 ## Deployment Context
 
 - Existing Site identity is tracked in `.openai/hosting.json`; never replace it or broaden access without approval.
 - App: https://relationship-copilot-amit.plumlyric7.chatgpt.site
 - Public source: https://github.com/amit-dommeti/relationship-copilot
-- The prior confirmed release is the October 10 retry-safety fix: Site source `c78b78ab507408f1e4f1842d795e5fda557fc693`, GitHub `43e8f7b15b3c63b9ba4afd181d430c00da9c94d4`, identical source trees. This file records the tested sent-draft protection; use the native Site deployment result and GitHub head to establish its publication, not this file alone.
+- The prior confirmed release is the October 10 sent-draft fix: Site source `dd16561402575edbd73231940ddb9b39328102ba`, GitHub `8f6081e995b8fc2162de9ca635116b6efac9bdbe`, identical source trees. This file records the tested demo-restore change; use the native Site deployment result and GitHub head to establish its publication, not this file alone.
 - Use the Sites source helper to open/synchronize before edits and package the exact pushed source. Use connected GitHub write tools if local GitHub push credentials remain unavailable. Never store credentials or private contacts in the repository.
 
 ## Limits And Next Useful Checks
@@ -42,8 +43,8 @@ Prior import safety remains in place: full validation, one transactional batch f
 - Stale suggestions are discarded rather than merged. Invalidation does not guarantee cancellation of provider work or charges. A same-contact job remains pending until its request finishes or times out.
 - These checks cover a single browser workspace session, not simultaneous editing across devices.
 - Import rollback and size checks ran against local SQLite, not a hosted D1 load/fault-injection environment. The prepared batch is limited to 45 writes plus two reads. The request body is capped at 8 MiB; collections are capped at 10,000 contacts, 500 circles, and 10,000 messages, with rejection rather than silent truncation.
-- Demo-mode imports still merge contacts/circles only, not full message/preferences restores. Investigate that preview/behavior mismatch in a future focused pass; the real-workspace restore is covered here.
+- Demo restore merges rather than replacing existing data. Demo persistence remains browser-local and can be cleared or evicted. The strict storage-before-state guarantee applies to imports; other demo edits retain their existing best-effort save behavior. Cross-tab storage conflicts are not resolved.
 - Retry identities survive failure and reopening within the same tab, not a reload or another device. Changing a failed entry starts a distinct recording. Review saved history before recording again after losing the tab; no universal exactly-once guarantee is claimed.
 - Preserving newer writing after an outgoing record uses a follow-up draft save, not one atomic transaction. Forced shutdown before that save, simultaneous clients, and a server write completing after the client has abandoned the request remain outside the tested guarantee. A server-side conditional draft-clear contract is a possible future hardening step; it requires separate contract/compatibility tests.
-- Next useful product check: reproduce the demo backup preview/restore mismatch before changing import behavior. Do not add unrelated features to this reliability pass.
+- Next useful safety check: reproduce the remaining storage-side draft-clear edge before changing the outgoing-message contract. Preserve the existing retry and state-ordering guarantees.
 - Real-user import and live AI preference/latency evaluation still require authorization. No adoption, retention, or writing-quality uplift is claimed.

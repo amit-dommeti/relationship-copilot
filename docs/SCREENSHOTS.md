@@ -15,6 +15,7 @@ Current release assets are in `assets/screenshots/v2/`. All are actual Playwrigh
 | 09-draft-in-progress.png | Reopened composer keeps its pending request state and handwritten text; simulated delayed response |
 | 10-import-safety.png | Malformed synthetic backup rejected before saving; previous file confirmation removed |
 | 11-reply-recovery.png | Unsaved Conversation entry retained after a simulated save failure; synthetic messages only |
+| 12-backup-preview.png | Complete backup summary and explicit demo-only destination before restoring; synthetic contacts and history |
 
 Regenerate after a successful build:
 ```sh
@@ -46,3 +47,9 @@ Capture only the reply-recovery asset:
 UPDATE_REPLY_SCREENSHOT=1 npm run test:browser
 ```
 The test rejects a save before it reaches the temporary database, then verifies a successful retry. It does not access LinkedIn or send a message to anyone.
+
+Capture only the complete-backup preview:
+```sh
+UPDATE_BACKUP_SCREENSHOT=1 npm run test:browser
+```
+The synthetic backup is restored in the browser-only demo. The test checks saved conversation history and preferences, reload persistence, duplicate prevention, rejection, storage-failure retry, and an unchanged private workspace. No real export is needed.

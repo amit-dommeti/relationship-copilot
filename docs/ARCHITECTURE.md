@@ -42,6 +42,12 @@ Rows are packed into UTF-8 JSON parameters of at most 512 KiB, then inserted thr
 
 The UI clears the old preview before reading another file, announces a persistent error, and ignores late results from a superseded selection or closed dialog.
 
+`shared/import-plan.js` prepares the contact merge, message identity remapping, normalized circles, restored writing preferences, and import receipt for both runtimes. Server persistence still uses its existing bounded transactional batch and owner-scoped reads. The extracted preparation does not introduce additional database queries or migrations.
+
+The isolated demo applies that plan to a new state object. Existing circles and messages win ID collisions; identified history is not duplicated on repeat restore. Existing contact notes, drafts, memberships, and reply state remain protected. Name, weekly goal, and voice are restored when preferences are present, while notification permission/preferences and runtime capabilities are not imported. Historical messages are sorted without changing the matched contact's current reply state.
+
+Demo import persists the entire next state to its one browser-storage key before replacing in-memory state. Validation or storage failure leaves the previous demo intact and keeps a persistent error in the import dialog for retry. This guarantee is limited to this import path; other demo edits retain their existing best-effort save behavior. Browser storage is not cloud backup, and simultaneous tabs or cleared browser data are not covered.
+
 ## Conversation Entry Recovery
 
 `web/reply-buffer.js` keeps unsaved message text and direction in memory, keyed by workspace and contact. Rendering the Conversation panel restores that entry. Each save captures the person, values, and edit revision; only an acknowledgement for unchanged input clears the buffer. A slow response preserves newer typing and its cursor, and finishing one person's save does not redraw another person's form. Per-person pending state blocks duplicate submissions even after the drawer is reopened.

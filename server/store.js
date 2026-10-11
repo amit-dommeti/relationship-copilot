@@ -1,13 +1,13 @@
 import {
   nowISO,
   normalizeContact,
-  mergeContacts,
   normalizeCircle,
   text,
   uid,
   dateValue,
 } from "../shared/domain.js";
 import { validateImport, importError } from "../shared/import-validation.js";
+import { prepareWorkspaceImport } from "../shared/import-plan.js";
 
 function jsonChunks(records) {
   const chunks = [];
@@ -76,45 +76,14 @@ export class Store {
     return c;
   }
   async import(owner, payload) {
-    const {
-      contacts: incoming,
-      circles = [],
-      messages = [],
-      settings,
-    } = validateImport(payload);
+    validateImport(payload);
     const existing = await this.list("contacts", owner);
-    const result = mergeContacts(existing, incoming);
+    const currentSettings = await this.settings(owner);
+    const result = prepareWorkspaceImport(existing, currentSettings, payload);
     const previous = new Map(existing.map((c) => [c.id, JSON.stringify(c)]));
     const changed = result.contacts.filter(
       (c) => previous.get(c.id) !== JSON.stringify(c),
     );
-    const contactIds = new Set(result.contacts.map((c) => c.id));
-    const importedMessages = messages.map((m, index) => {
-      const contactId = result.idMap[m.contactId] || m.contactId;
-      if (!contactIds.has(contactId))
-        throw importError(
-          `Message ${index + 1} refers to a contact missing from this workspace and backup.`,
-        );
-      return {
-        id: text(m.id, 1000) || uid(),
-        contactId,
-        text: text(m.text, 12000),
-        direction: m.direction === "out" ? "out" : "in",
-        at: dateValue(m.at) ? new Date(m.at).toISOString() : nowISO(),
-        source: m.source === "linkedin" ? "linkedin" : "manual",
-      };
-    });
-    const currentSettings = await this.settings(owner);
-    const restored = settings
-      ? {
-          name: text(settings.name, 80),
-          voice: text(settings.voice, 4000),
-          weeklyGoal: Math.max(
-            1,
-            Math.min(20, Number(settings.weeklyGoal) || 3),
-          ),
-        }
-      : {};
     // Bounded JSON parameters keep large imports below D1's query/parameter limits.
     // Every table and the import receipt commit together in ONE transactional batch.
     const statements = [
@@ -125,14 +94,14 @@ export class Store {
           chunk,
         ),
       ),
-      ...jsonChunks(circles.map(normalizeCircle)).map((chunk) =>
+      ...jsonChunks(result.circles).map((chunk) =>
         this.stmt(
           "INSERT INTO circles(owner,id,data) SELECT ?,json_extract(value,'$.id'),value FROM json_each(?) WHERE true ON CONFLICT(owner,id) DO NOTHING",
           owner,
           chunk,
         ),
       ),
-      ...jsonChunks(importedMessages).map((chunk) =>
+      ...jsonChunks(result.messages).map((chunk) =>
         this.stmt(
           "INSERT INTO messages(owner,id,contact_id,data,created_at) SELECT ?,json_extract(value,'$.id'),json_extract(value,'$.contactId'),value,json_extract(value,'$.at') FROM json_each(?) WHERE true ON CONFLICT(owner,id) DO NOTHING",
           owner,
@@ -142,12 +111,7 @@ export class Store {
       this.stmt(
         "INSERT INTO settings(owner,data) VALUES(?,?) ON CONFLICT(owner) DO UPDATE SET data=excluded.data",
         owner,
-        JSON.stringify({
-          ...currentSettings,
-          ...restored,
-          lastImportedAt: nowISO(),
-          lastImportCount: incoming.length,
-        }),
+        JSON.stringify(result.settings),
       ),
     ];
     if (statements.length > 45)

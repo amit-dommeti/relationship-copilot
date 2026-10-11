@@ -1,4 +1,34 @@
-import { normalizeContact, DAY } from "../shared/domain.js";
+import { normalizeContact, dateValue, DAY } from "../shared/domain.js";
+import { prepareWorkspaceImport } from "../shared/import-plan.js";
+
+export function mergeDemoImport(current, payload) {
+  const plan = prepareWorkspaceImport(
+    current.contacts,
+    current.settings,
+    payload,
+  );
+  const keepExisting = (existing, incoming) => {
+    const records = new Map(existing.map((row) => [row.id, row]));
+    for (const row of incoming)
+      if (!records.has(row.id)) records.set(row.id, row);
+    return [...records.values()];
+  };
+  return {
+    added: plan.added,
+    updated: plan.updated,
+    idMap: plan.idMap,
+    state: {
+      ...current,
+      contacts: plan.contacts,
+      circles: keepExisting(current.circles, plan.circles),
+      messages: keepExisting(current.messages, plan.messages).sort(
+        (a, b) => dateValue(a.at) - dateValue(b.at),
+      ),
+      settings: plan.settings,
+    },
+  };
+}
+
 export function demoState() {
   const ago = (days) => new Date(Date.now() - days * DAY).toISOString();
   const circles = [

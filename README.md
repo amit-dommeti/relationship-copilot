@@ -36,6 +36,8 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Safer restores:** workspace imports validate the complete backup before saving. Contacts, circles, messages, and import history commit together or not at all. A rejected file clears the previous preview, explains the problem, and leaves your saved records unchanged. [Import safety screenshot](assets/screenshots/v2/10-import-safety.png).
 
+**Try a complete restore in the demo:** backups restore conversation history and writing preferences as well as people and circles, using the same merge rules as the private workspace. The preview explains what is included and what stays unchanged. Demo imports remain browser-only; a storage failure leaves the current demo intact for retry. [Backup preview](assets/screenshots/v2/12-backup-preview.png).
+
 **Keep the reply you were saving:** unsaved Conversation entries stay with their person when you set a reminder, switch tabs, or close and reopen the drawer. Failed saves retain the text, and a delayed save cannot clear newer typing. Entries stay in this tab until you explicitly save them. [Reply recovery screenshot](assets/screenshots/v2/11-reply-recovery.png).
 
 **Retry without duplicate history:** retrying an unchanged message in the same tab reuses its save identity, even if the original save succeeded but its confirmation or following refresh failed. This covers saved replies and manually recorded sends, not LinkedIn delivery. After a reload, changed text, or a different tab, review history before recording again.

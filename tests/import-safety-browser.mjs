@@ -30,7 +30,7 @@ export async function checkImportSafety(page, base, shots) {
   await openImport.click();
   const input = page.locator("#import-file");
   const confirm = page.getByRole("button", {
-    name: "Import contacts",
+    name: "Restore backup",
     exact: true,
   });
   await input.setInputFiles(file(backup));

@@ -46,6 +46,12 @@ Evidence: a failing-before/fixed-after API regression, transaction/concurrency t
 
 Evidence: a failing-before/fixed-after browser regression, an edit-revision unit test, and controlled local timing/failure checks. This is a verified application behavior, not measured retention or AI writing-quality improvement.
 
+## Reliability Iteration: The Demo Must Keep The Same Promise
+
+"I tested restoring a full backup in the demo and found that its success message hid missing conversation history and preferences. I reused the real workspace's import rules so the demo could be a trustworthy rehearsal, then tested rejection and browser-storage failure. I made the destination explicit and kept the real workspace untouched. The tradeoff is that demo data is still browser-local, not a second cloud backup."
+
+Evidence: a failing-before/fixed-after browser restore, direct parity tests against local server storage, and simulated quota-failure/retry checks. No increase in adoption or successful real-user imports was measured.
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

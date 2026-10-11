@@ -103,3 +103,19 @@ The prior reply iteration's lost-acknowledgement gap is now covered for retained
 - [ ] Atomic preservation across forced shutdown or simultaneous clients implemented.
 
 The follow-up draft save uses existing recovery behavior. No external message, live model evaluation, or real-user data was used.
+
+## Complete Demo Restore Checks - October 11, 2026
+
+- [x] Demo restore silently dropping message history reproduced before the fix.
+- [x] 54 unit/integration tests and production build pass.
+- [x] Demo/server restore parity covers contact mapping, preserved relationship state, circles, history, preferences, and notifications.
+- [x] Existing private import rollback, owner isolation, and bounded 10,000-contact checks remain passing.
+- [x] Full Chromium core-journey suite passes across desktop/tablet/mobile.
+- [x] Focused restore check verifies reload persistence, repeat deduplication, orphan rejection, storage-failure retry, and no private API writes.
+- [x] Backup summary and demo-only destination inspected on desktop/mobile; new committed screenshot uses synthetic data only.
+- [x] Import errors persist in the dialog and are not duplicated in transient notices.
+- [x] Existing Site identity, owner-private access, migrations, and AI configuration unchanged.
+- [ ] Browser eviction and cross-tab conflict recovery implemented.
+- [ ] Production D1 fault/load testing or a real-user backup experiment performed.
+
+Demo import is browser-local, not a cloud backup. Other demo editing flows retain their existing save behavior.

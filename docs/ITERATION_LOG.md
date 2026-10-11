@@ -2,6 +2,18 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Restore The Whole Demo Backup - October 11, 2026
+
+- Reproduced a restore from Preferences that reported success while dropping a backup's saved message: the browser expected one restored record and found zero. Demo imports also ignored writing preferences and the import receipt.
+- Extracted the existing private-workspace import preparation into a shared, non-mutating plan. Demo restores now include messages, circles, writing preferences, and metadata while preserving existing relationship context, identified history, notification settings, and demo capabilities. The server keeps the same transactional writes, query bounds, and owner isolation.
+- Made browser storage the demo import's commit point. A rejected backup or failed storage write leaves the previous state unchanged, with a persistent dialog error and retry available. No private API write occurs in demo mode.
+- Added a backup-specific preview of message/circle counts, restored preferences, and preserved data, plus an explicit demo-only destination notice and Restore backup action.
+- Verified 54 unit/integration tests, including five new demo/real-store parity, repeat-restore, non-mutation, contact-only, and legacy-backup tests. Production build and the focused Chromium restore checks passed, including actual reload persistence, orphan rejection, quota-failure injection/retry, and private-workspace isolation.
+- Full Chromium core-journey suite passed across desktop/tablet/mobile, including existing private restore, drafts, reply recovery, retry, and sent-draft protection checks. Import errors are now announced once in the persistent dialog instead of duplicated in a toast.
+- Inspected desktop/mobile preview captures; added a real browser screenshot containing only synthetic data. No LinkedIn account, private contact file, live AI call, paid service, or sharing change was involved.
+- Limits: demo storage remains browser-local and can be cleared or evicted. Other demo actions still use their existing save behavior; simultaneous tabs and production D1 fault/load testing were not added. No user outcome or model-quality improvement is claimed.
+- Publication is established by the native Site result and GitHub head, not inferred from this log.
+
 ## Keep The Next Draft - October 10, 2026
 
 - Reproduced a delayed "I sent it" completion erasing a newer, already-saved draft: the browser regression expected the newer text and found an empty stored draft instead.

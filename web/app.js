@@ -57,7 +57,7 @@ import {
 import { importFile, parseContacts, parseBackup } from "../shared/import.js";
 import { createReplyBuffer } from "./reply-buffer.js";
 import { createMessageRecorder } from "./message-recorder.js";
-import { demoState } from "./demo.js";
+import { demoState, mergeDemoImport } from "./demo.js";
 import { createDraftSaver } from "./draft-saver.js";
 import { createDraftJobs } from "./draft-jobs.js";
 const iconSet = {
@@ -750,7 +750,7 @@ function previewImport(result) {
   stagedImport = result;
   const merged = mergeContacts(data.contacts, result.contacts);
   $("#import-preview").innerHTML =
-    `<div class="notice">${merged.added} new people · ${merged.updated} matches to update${result.warnings.length ? ` · ${result.warnings.length} rows skipped` : ""}</div><div class="preview-list">${result.contacts
+    `<div class="notice">${merged.added} new people · ${merged.updated} matches to update${result.warnings.length ? ` · ${result.warnings.length} rows skipped` : ""}</div>${result.kind === "backup" ? `<p>This backup includes ${result.messages.length} saved ${result.messages.length === 1 ? "message" : "messages"} and ${result.circles.length} ${result.circles.length === 1 ? "circle" : "circles"}${result.settings ? ", plus your name, weekly goal, and writing preferences" : ""}. Existing notes, drafts, circles, and saved messages are kept. Your notification preference stays unchanged.</p>` : ""}${demo ? '<p class="small-caption">Demo only: this import stays in this browser. Your private workspace will not change.</p>' : ""}<div class="preview-list">${result.contacts
       .slice(0, 8)
       .map(
         (c) =>
@@ -758,7 +758,7 @@ function previewImport(result) {
       )
       .join(
         "",
-      )}</div>${result.contacts.length > 8 ? `<p>And ${result.contacts.length - 8} more.</p>` : ""}<label>Add new people to a circle<select id="import-circle"><option value="">No circle yet</option>${data.circles.map((g) => `<option value="${g.id}">${esc(g.name)}</option>`).join("")}</select></label><div class="form-actions">${btn("Import contacts", "confirm-import", "check", "primary")}</div>`;
+      )}</div>${result.contacts.length > 8 ? `<p>And ${result.contacts.length - 8} more.</p>` : ""}<label>Add new people to a circle<select id="import-circle"><option value="">No circle yet</option>${data.circles.map((g) => `<option value="${g.id}">${esc(g.name)}</option>`).join("")}</select></label><div id="import-save-error" role="alert"></div><div class="form-actions">${btn(result.kind === "backup" ? "Restore backup" : "Import contacts", "confirm-import", "check", "primary")}</div>`;
   icons();
 }
 function linkedInHelp() {
@@ -1083,11 +1083,15 @@ document.addEventListener("click", async (e) => {
       }));
       let result;
       if (demo) {
-        result = mergeContacts(data.contacts, incoming);
-        data.contacts = result.contacts;
-        for (const g of stagedImport.circles)
-          if (!data.circles.some((x) => x.id === g.id)) data.circles.push(g);
-        persistDemo();
+        result = mergeDemoImport(data, { ...stagedImport, contacts: incoming });
+        try {
+          localStorage.setItem("rc-demo-v2", JSON.stringify(result.state));
+        } catch {
+          throw new Error(
+            "This browser couldn't save the import. Nothing was imported. Free some browser storage and try again.",
+          );
+        }
+        data = result.state;
       } else {
         result = await request("/api/import", "POST", {
           ...stagedImport,
@@ -1242,6 +1246,11 @@ document.addEventListener("click", async (e) => {
       );
   } catch (error) {
     if (draftJob && !draftJobs.isCurrent(draftJob)) return;
+    if (action === "confirm-import" && $("#import-save-error")) {
+      $("#import-save-error").className = "notice error";
+      $("#import-save-error").textContent = error.message;
+      return;
+    }
     notify(
       error.name === "TimeoutError"
         ? "That took too long. Please try again."
