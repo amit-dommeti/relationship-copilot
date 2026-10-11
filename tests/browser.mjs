@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { createServer } from "node:net";
 import { zipSync, strToU8 } from "fflate";
 import { checkDraftGeneration } from "./draft-generation-browser.mjs";
+import { checkImportSafety } from "./import-safety-browser.mjs";
 
 const socket = createServer();
 await new Promise((resolve) => socket.listen(0, "127.0.0.1", resolve));
@@ -327,6 +328,7 @@ try {
   );
 
   await checkDraftGeneration(page, base);
+  await checkImportSafety(page, base, shots);
   await page.goto(base + "/?demo=1#today");
   await page
     .getByRole("heading", { name: "A little closer, one hello at a time." })

@@ -1,6 +1,7 @@
 import Papa from "papaparse";
 import { unzipSync, strFromU8 } from "fflate";
 import { normalizeContact, normalizeCircle, dateValue, DAY } from "./domain.js";
+import { validateImport } from "./import-validation.js";
 
 export function parseContacts(input) {
   const lines = input.replace(/^\uFEFF/, "").split(/\r?\n/);
@@ -67,9 +68,8 @@ export function parseBackup(input) {
   } catch {
     throw new Error("This backup is not valid JSON.");
   }
-  const raw = Array.isArray(data) ? data : data?.contacts;
-  if (!Array.isArray(raw) || raw.length > 10000)
-    throw new Error("This backup must contain up to 10,000 contacts.");
+  data = validateImport(Array.isArray(data) ? { contacts: data } : data);
+  const raw = data.contacts;
   const circles = Array.isArray(data.circles)
     ? data.circles.map(normalizeCircle)
     : [];
@@ -111,13 +111,13 @@ export function parseBackup(input) {
         direction: "in",
         at: c.lastReplyAt,
       });
-  return {
+  return validateImport({
     contacts,
     circles,
     messages,
     settings: data.settings,
     warnings: [],
-  };
+  });
 }
 export async function importFile(file) {
   if (file.size > 20 * 1024 * 1024)

@@ -7,6 +7,27 @@ import {
   uid,
   dateValue,
 } from "../shared/domain.js";
+import { validateImport, importError } from "../shared/import-validation.js";
+
+function jsonChunks(records) {
+  const chunks = [];
+  let rows = [],
+    bytes = 2;
+  const encoder = new TextEncoder();
+  for (const record of records) {
+    const json = JSON.stringify(record);
+    const size = encoder.encode(json).length + 1;
+    if (bytes + size > 512 * 1024 && rows.length) {
+      chunks.push(`[${rows.join(",")}]`);
+      rows = [];
+      bytes = 2;
+    }
+    rows.push(json);
+    bytes += size;
+  }
+  if (rows.length) chunks.push(`[${rows.join(",")}]`);
+  return chunks;
+}
 
 export class Store {
   constructor(db) {
@@ -54,23 +75,86 @@ export class Store {
     ).run();
     return c;
   }
-  async import(owner, incoming, circles = []) {
+  async import(owner, payload) {
+    const {
+      contacts: incoming,
+      circles = [],
+      messages = [],
+      settings,
+    } = validateImport(payload);
     const existing = await this.list("contacts", owner);
     const result = mergeContacts(existing, incoming);
+    const previous = new Map(existing.map((c) => [c.id, JSON.stringify(c)]));
     const changed = result.contacts.filter(
-      (c) =>
-        !existing.some(
-          (p) => p.id === c.id && JSON.stringify(p) === JSON.stringify(c),
-        ),
+      (c) => previous.get(c.id) !== JSON.stringify(c),
     );
-    for (let i = 0; i < changed.length; i += 50)
-      await this.db.batch(
-        changed.slice(i, i + 50).map((c) => this.contactStatement(owner, c)),
+    const contactIds = new Set(result.contacts.map((c) => c.id));
+    const importedMessages = messages.map((m, index) => {
+      const contactId = result.idMap[m.contactId] || m.contactId;
+      if (!contactIds.has(contactId))
+        throw importError(
+          `Message ${index + 1} refers to a contact missing from this workspace and backup.`,
+        );
+      return {
+        id: text(m.id, 1000) || uid(),
+        contactId,
+        text: text(m.text, 12000),
+        direction: m.direction === "out" ? "out" : "in",
+        at: dateValue(m.at) ? new Date(m.at).toISOString() : nowISO(),
+        source: m.source === "linkedin" ? "linkedin" : "manual",
+      };
+    });
+    const currentSettings = await this.settings(owner);
+    const restored = settings
+      ? {
+          name: text(settings.name, 80),
+          voice: text(settings.voice, 4000),
+          weeklyGoal: Math.max(
+            1,
+            Math.min(20, Number(settings.weeklyGoal) || 3),
+          ),
+        }
+      : {};
+    // Bounded JSON parameters keep large imports below D1's query/parameter limits.
+    // Every table and the import receipt commit together in ONE transactional batch.
+    const statements = [
+      ...jsonChunks(changed).map((chunk) =>
+        this.stmt(
+          "INSERT INTO contacts(owner,id,data,updated_at) SELECT ?,json_extract(value,'$.id'),value,json_extract(value,'$.updatedAt') FROM json_each(?) WHERE true ON CONFLICT(owner,id) DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at",
+          owner,
+          chunk,
+        ),
+      ),
+      ...jsonChunks(circles.map(normalizeCircle)).map((chunk) =>
+        this.stmt(
+          "INSERT INTO circles(owner,id,data) SELECT ?,json_extract(value,'$.id'),value FROM json_each(?) WHERE true ON CONFLICT(owner,id) DO NOTHING",
+          owner,
+          chunk,
+        ),
+      ),
+      ...jsonChunks(importedMessages).map((chunk) =>
+        this.stmt(
+          "INSERT INTO messages(owner,id,contact_id,data,created_at) SELECT ?,json_extract(value,'$.id'),json_extract(value,'$.contactId'),value,json_extract(value,'$.at') FROM json_each(?) WHERE true ON CONFLICT(owner,id) DO NOTHING",
+          owner,
+          chunk,
+        ),
+      ),
+      this.stmt(
+        "INSERT INTO settings(owner,data) VALUES(?,?) ON CONFLICT(owner) DO UPDATE SET data=excluded.data",
+        owner,
+        JSON.stringify({
+          ...currentSettings,
+          ...restored,
+          lastImportedAt: nowISO(),
+          lastImportCount: incoming.length,
+        }),
+      ),
+    ];
+    if (statements.length > 45)
+      throw importError(
+        "This backup is too large for one safe import. Use a smaller file.",
       );
-    const previousCircles = await this.list("circles", owner);
-    for (const c of circles)
-      if (!previousCircles.some((g) => g.id === c.id))
-        await this.saveCircle(owner, c);
+    await this.db.batch(statements);
     return {
       added: result.added,
       updated: result.updated,

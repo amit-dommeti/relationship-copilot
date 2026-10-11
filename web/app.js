@@ -640,6 +640,7 @@ function circleForm(id) {
     }</div></fieldset><div class="form-actions">${btn("Cancel", "close", "", "quiet")}<button class="button primary" type="submit">${i("check")}Save circle</button></div></form>`,
   );
 }
+let importAttempt;
 function importModal(paste = false) {
   modalName = "import";
   stagedImport = null;
@@ -647,6 +648,19 @@ function importModal(paste = false) {
     "Bring your people along",
     `<div class="stack">${paste ? `<label>Paste CSV or spreadsheet rows<textarea id="paste-content" rows="7" placeholder="Name,Company,Role,URL&#10;Maya Patel,Stripe,Product Manager,"></textarea></label>${btn("Preview contacts", "preview-paste", "arrow-right", "primary")}` : `<label class="dropzone" id="dropzone">${i("upload")}<strong>Choose a file or drop it here</strong><p>LinkedIn ZIP, CSV, or Copilot backup · Up to 20 MB</p><input type="file" id="import-file" accept=".csv,.zip,.json" aria-label="Choose contact file"></label><p>We'll show you what we found before anything is saved. Existing notes and circles are preserved.</p>${btn("Paste rows instead", "paste", "clipboard", "quiet")}`}<div id="import-preview"></div></div>`,
   );
+}
+async function prepareImport(read) {
+  const preview = $("#import-preview");
+  const attempt = (importAttempt = Symbol());
+  stagedImport = null;
+  preview.innerHTML = '<p role="status">Checking your file...</p>';
+  try {
+    const result = await read();
+    if (attempt === importAttempt && preview.isConnected) previewImport(result);
+  } catch (error) {
+    if (attempt === importAttempt && preview.isConnected)
+      preview.innerHTML = `<div class="notice error" role="alert">${esc(error.message)}</div>`;
+  }
 }
 function previewImport(result) {
   stagedImport = result;
@@ -780,7 +794,7 @@ document.addEventListener("change", async (e) => {
       draftJobs.invalidate(selected);
     }
     if (e.target.id === "import-file" && e.target.files[0])
-      previewImport(await importFile(e.target.files[0]));
+      await prepareImport(() => importFile(e.target.files[0]));
   } catch (e) {
     notify(e.message, true);
   }
@@ -800,7 +814,7 @@ document.addEventListener("drop", async (e) => {
     $("#dropzone").classList.remove("drag");
     try {
       if (e.dataTransfer.files[0])
-        previewImport(await importFile(e.dataTransfer.files[0]));
+        await prepareImport(() => importFile(e.dataTransfer.files[0]));
     } catch (err) {
       notify(err.message, true);
     }
@@ -932,7 +946,7 @@ document.addEventListener("click", async (e) => {
     } else if (action === "import" || action === "paste")
       importModal(action === "paste");
     else if (action === "preview-paste")
-      previewImport(parseContacts($("#paste-content").value));
+      await prepareImport(() => parseContacts($("#paste-content").value));
     else if (action === "confirm-import") {
       if (!stagedImport) throw new Error("Choose a contact file first.");
       draftJobs.reset();

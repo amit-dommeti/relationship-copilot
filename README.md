@@ -34,6 +34,8 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Your edits win:** writing or changing intent while a suggestion is loading makes that response stale. It will not replace your newer work. Requests stay with their contact and workspace, and reopening a contact keeps its loading state. [In-progress screenshot](assets/screenshots/v2/09-draft-in-progress.png).
 
+**Safer restores:** workspace imports validate the complete backup before saving. Contacts, circles, messages, and import history commit together or not at all. A rejected file clears the previous preview, explains the problem, and leaves your saved records unchanged. [Import safety screenshot](assets/screenshots/v2/10-import-safety.png).
+
 ## Try It Locally
 
 Requires Node.js 22.13+ (Node 24 LTS recommended).

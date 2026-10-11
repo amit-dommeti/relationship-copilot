@@ -1,5 +1,5 @@
 import { Store } from "./store.js";
-import { text, uid, nowISO, recommendations } from "../shared/domain.js";
+import { text, uid, recommendations } from "../shared/domain.js";
 import {
   requireSameOrigin,
   readJSON,
@@ -168,44 +168,7 @@ export async function api(request, env, identity) {
     }
     if (path === "/api/import" && method === "POST") {
       const b = await readJSON(request, 8 * 1024 * 1024);
-      if (
-        !Array.isArray(b.contacts) ||
-        b.contacts.length > 10000 ||
-        !Array.isArray(b.circles || []) ||
-        (b.circles || []).length > 500
-      )
-        return json(
-          { error: "Choose a contact file with up to 10,000 people." },
-          400,
-        );
-      const result = await store.import(owner, b.contacts, b.circles || []);
-      if (Array.isArray(b.messages))
-        for (const m of b.messages.slice(0, 10000)) {
-          const c = await store.contact(
-            owner,
-            result.idMap[m.contactId] || m.contactId,
-          );
-          if (c) await store.message(owner, c, m, false);
-        }
-      const settings = await store.settings(owner);
-      const restored =
-        b.settings && typeof b.settings === "object"
-          ? {
-              name: text(b.settings.name, 80),
-              voice: text(b.settings.voice, 4000),
-              weeklyGoal: Math.max(
-                1,
-                Math.min(20, Number(b.settings.weeklyGoal) || 3),
-              ),
-            }
-          : {};
-      await store.settings(owner, {
-        ...settings,
-        ...restored,
-        lastImportedAt: nowISO(),
-        lastImportCount: b.contacts.length,
-      });
-      return json(result);
+      return json(await store.import(owner, b));
     }
     if (path === "/api/recommendations" && method === "GET")
       return json(

@@ -2,6 +2,17 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## All-Or-Nothing Imports - October 10, 2026
+
+- Reproduced partial mutation with an API regression: a backup with a valid company update and malformed message contact ID returned an error after changing the saved company.
+- Added shared full-payload validation for preview and server processing. Invalid records and collection limits now reject the complete import instead of silently skipping or truncating messages.
+- Consolidated contacts, circles, history, restored preferences, and import metadata into one transactional database batch. Bounded JSON inserts support the existing 10,000-contact limit without one hosted query per person. Applied migrations are unchanged.
+- Preserved matching-contact notes, drafts, circle membership, and reply state; existing circles and notification settings are not replaced. Historical messages are mapped to the matched person. Stable message IDs make repeated backup imports idempotent.
+- Cleared stale previews while reading a new file and ignored superseded/closed-dialog reads. Persistent accessible errors leave no old confirmation button behind.
+- Verified 31 unit/integration tests, including seven new import tests: malformed payloads, complete rollback after an injected storage failure, identity remapping, repeat restore, owner isolation/orphan rejection, and a bounded 10,000-contact import. Production build and full Chromium core-journey checks passed; browser regressions cover invalid-file replacement, delayed file reads, unchanged data after rejection, corrected restore, and reload persistence.
+- Inspected desktop/mobile error-state captures with synthetic data. No real contacts, LinkedIn access, live AI calls, or paid services were used. Local SQLite testing is not a hosted D1 load test; concurrent edits across devices remain outside this verification.
+- Publication is established by the native Site result and GitHub head, not inferred from this log.
+
 ## Your Edits Win - October 10, 2026
 
 - Reproduced a late-response overwrite in Chromium: a simulated draft response replaced a newer, already-saved handwritten message.

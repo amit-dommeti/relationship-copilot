@@ -22,6 +22,12 @@ Evidence: five focused save-queue tests plus browser outage/retry/reload checks.
 
 "A generated suggestion should not have more authority than the person writing. I reproduced a delayed response overwriting a newer saved message, then gave each request a contact and workspace lifetime. New edits invalidate the suggestion, and navigation cannot create duplicate work or carry old results into a new workspace. I chose to discard stale suggestions rather than attempt a surprising automatic merge. The evidence is controlled timing tests, not better model writing or measured user impact."
 
+## Reliability Iteration: An Error Must Mean No Partial Import
+
+"A file preview is not enough to make an import safe. I reproduced a backup reporting failure after it had already changed a contact. I moved validation ahead of all writes, made the restore one all-or-nothing transaction, and tested a failure after the final planned write. I also checked the file-picker experience: rejecting a new file must remove the old file's confirmation. The decision prioritized trust and recoverability over adding another feature."
+
+Evidence: a failing-before/fixed-after regression, rollback and identity tests, a synthetic 10,000-contact local test, and browser rejection/retry checks. No production data-loss rate or user trust uplift was measured.
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

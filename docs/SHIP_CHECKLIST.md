@@ -43,3 +43,17 @@ Unsaved drafts are retained only in the current tab. The unload warning is a bro
 - [ ] Live model writing-quality, cost, or response-time evaluation performed.
 
 These are application timing tests with simulated responses, not an AI quality evaluation.
+
+## Import Safety Checks - October 10, 2026
+
+- [x] Partial contact mutation reproduced before fixing malformed backup handling.
+- [x] 31 unit/integration tests pass, including seven import safety tests.
+- [x] Injected failure rolls back contacts, circles, messages, preferences, and import metadata.
+- [x] Identity remapping, repeat restore, orphan rejection, and owner isolation checked.
+- [x] Synthetic 10,000-contact import uses one batch with bounded parameters/query count.
+- [x] Production build and full Chromium browser checks pass.
+- [x] Previous preview removed on invalid selection; delayed file result cannot replace the latest selection.
+- [x] Corrected backup restores successfully and persists after reload.
+- [x] Desktop/mobile error captures reviewed; committed screenshot uses synthetic data only.
+- [ ] Hosted D1 load/fault-injection testing performed.
+- [ ] Simultaneous imports and editing from separate devices tested.
