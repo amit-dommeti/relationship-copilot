@@ -119,3 +119,25 @@ The follow-up draft save uses existing recovery behavior. No external message, l
 - [ ] Production D1 fault/load testing or a real-user backup experiment performed.
 
 Demo import is browser-local, not a cloud backup. Other demo editing flows retain their existing save behavior.
+
+## Conditional Draft Clear Checks - October 11, 2026
+
+- [x] Storage-side newer-draft loss reproduced before implementing the conditional clear.
+- [x] 60 unit/integration tests and production build pass.
+- [x] Clear requires the matching saved version and text; identical-text saves invalidate older permission.
+- [x] Optional/legacy guard, malformed input, replay, historical-event, and transaction rollback cases checked.
+- [x] Retry retains its original guard and identity.
+- [x] Initial conditional-clear implementation passed the full Chromium suite across desktop/tablet/mobile.
+- [x] Final focused sent-draft checks pass, including the reviewed delayed-refresh/metadata-save/next-send case.
+- [x] Final full Chromium core-journey suite passes twice consecutively after the review fix. Earlier timeout history and diagnostics retained; assertions/time limits unchanged.
+- [x] Browser verifies durability before acknowledgement and after a lost confirmation, with repair writes blocked.
+- [x] A completed save from a simulated second client survives delayed recording and is displayed without cleanup overwrites.
+- [x] Separate outgoing history preserves the composer across reload.
+- [x] Synthetic desktop/mobile pending-recording captures inspected; no new layout screenshot needed.
+- [x] Applied migrations, Site identity, owner-private audience, and AI settings unchanged.
+- [ ] General concurrent contact PATCH/import conflict resolution implemented.
+- [ ] Hosted D1 fault injection and forced OS/browser shutdown tested.
+
+This closes the specific already-saved-draft gap left by the earlier sent-draft iteration. Unsaved text and old open browser bundles remain outside that guarantee.
+
+The final full-suite release gate now passes. The earlier intermittent timeouts were not reproduced in the resumed verification pass; their root cause is still unknown. Publication must be confirmed from the native deployment result and GitHub head.

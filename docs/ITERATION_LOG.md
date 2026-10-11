@@ -2,6 +2,21 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Clear Only The Sent Version - October 11, 2026
+
+- Reproduced the remaining storage-side loss: a delayed outgoing record erased an already-saved newer draft. The previous browser repair required another save to complete.
+- Added server-generated saved-version tokens and an optional message clear guard. Only matching version plus exact normalized sent text can clear the draft, with message ordering and retry guards preserved. Clear, contact-state update, and insertion commit or roll back together.
+- Conversation history and older API clients preserve drafts by default. Legacy/imported contacts can explicitly match an absent version; malformed guards reject. Retries retain their original clear guard as well as their identity.
+- Removed unconditional browser cleanup saves. Newer local edits use the existing save queue; unchanged editors display the refreshed saved result and remain open when a draft was preserved. Demo applies equivalent conditional clearing.
+- A focused independent review identified a stale-refresh follow-on: an older snapshot could replace the version of a newly acknowledged draft. Retain acknowledged text/version pairs across in-flight refreshes and extend the browser case through the next recorded send, not just preservation of its displayed text.
+- Verified 60 unit/integration tests and the production build. Six added tests cover matching, newer and identical-text saves, legacy compatibility, malformed guards, history/replay, rollback, and retry-guard stability.
+- The initial implementation passed the full Chromium suite across desktop/tablet/mobile. Final focused sent-draft checks pass after review fixes, including a subsequent send after an intervening metadata save. They confirm newer data survives before acknowledgement, lost acknowledgement requires no repair write, another simulated client's completed save is preserved and displayed, and separate outgoing history leaves the draft intact across reload.
+- Publication was initially held after four full reruns timed out on existing toast-dismissal or autosave-status waits. A separate reply-buffer run passed and logged its error timer firing after approximately nine seconds. No JavaScript page errors appeared in the last failed full run; added failure status/error/screenshot diagnostics without weakening checks.
+- On the resumed October 11 pass, all 60 unit/integration tests, the production build, and two consecutive complete Chromium runs passed on the final implementation, including the reviewed refresh/metadata/next-send case. No application code or assertion/time-limit changes were needed for these reruns. The earlier timeouts did not reproduce; their cause remains unknown, not claimed fixed.
+- Inspected synthetic desktop/mobile pending-state captures; no layout change required a new portfolio screenshot. Applied SQL, Site identity, owner-private audience, AI settings, and external integrations remain unchanged.
+- Limits: not general cross-device editing conflict resolution or durable recovery of unsaved text. An already-open old browser bundle can still perform its previous cleanup; reload after release. No hosted D1 fault injection, forced OS shutdown, real-user experiment, or AI quality evaluation was performed.
+- The release gate now passes. Publication is established by the native Site result and GitHub head, not inferred from this log.
+
 ## Restore The Whole Demo Backup - October 11, 2026
 
 - Reproduced a restore from Preferences that reported success while dropping a backup's saved message: the browser expected one restored record and found zero. Demo imports also ignored writing preferences and the import receipt.

@@ -140,6 +140,21 @@ export async function api(request, env, identity) {
       if (action === "messages" && method === "POST") {
         const b = await readJSON(request, 14000);
         if (
+          b.expectedDraftVersion !== undefined &&
+          (typeof b.expectedDraftVersion !== "string" ||
+            (b.expectedDraftVersion !== "" &&
+              !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+                b.expectedDraftVersion,
+              )))
+        )
+          return json(
+            {
+              error:
+                "The draft version is invalid. Reload before trying again.",
+            },
+            400,
+          );
+        if (
           b.requestId !== undefined &&
           (typeof b.requestId !== "string" ||
             !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(

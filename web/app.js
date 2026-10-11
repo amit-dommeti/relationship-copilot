@@ -152,6 +152,8 @@ const draftJobs = createDraftJobs();
 const replyBuffer = createReplyBuffer();
 const messageRecorder = createMessageRecorder();
 const sentDrafts = new Map();
+const draftAcknowledgements = new Map();
+let draftWriteSerial = 0;
 const workspace = () => (demo ? "demo" : "private");
 const draftSaver = createDraftSaver(
   (id, value) => updateContact(id, { draft: value }, { paint: false }),
@@ -312,7 +314,17 @@ async function refresh(renderPage = true) {
     if (renderPage) render();
     return;
   }
-  data = await request("/api/state");
+  const startedAtWrite = draftWriteSerial;
+  const fresh = await request("/api/state");
+  // A response may contain an older snapshot than an autosave acknowledged
+  // while it was in flight. Keep that saved text and its token together.
+  fresh.contacts = fresh.contacts.map((contact) => {
+    const saved = draftAcknowledgements.get(contact.id);
+    return saved?.serial > startedAtWrite
+      ? { ...contact, draft: saved.draft, draftVersion: saved.draftVersion }
+      : contact;
+  });
+  data = fresh;
   loadError = "";
   if (renderPage) render();
 }
@@ -320,16 +332,29 @@ async function updateContact(id, patch, { paint = true } = {}) {
   const c = data.contacts.find((c) => c.id === id);
   if (!c) return;
   const next = demo
-    ? normalizeContact({ ...c, ...patch })
+    ? { ...normalizeContact({ ...c, ...patch }), draftVersion: uid() }
     : await request(`/api/contacts/${encodeURIComponent(id)}`, "PATCH", patch);
+  if (!demo) {
+    draftAcknowledgements.set(id, {
+      serial: ++draftWriteSerial,
+      draft: next.draft,
+      draftVersion: next.draftVersion,
+    });
+  }
   data.contacts = data.contacts.map((x) => (x.id === id ? next : x));
   if (demo) persistDemo();
   if (paint) render();
   return next;
 }
-async function addMessage(c, text, direction) {
+async function addMessage(c, text, direction, expectedDraftVersion) {
   if (demo) {
     const at = nowISO();
+    const current = data.contacts.find((person) => person.id === c.id);
+    const clearDraft =
+      direction === "out" &&
+      expectedDraftVersion !== undefined &&
+      (current.draftVersion ?? "") === expectedDraftVersion &&
+      current.draft === text;
     data.messages.push({
       id: uid(),
       contactId: c.id,
@@ -344,7 +369,11 @@ async function addMessage(c, text, direction) {
         needsReply: direction === "in",
         latestMessageAt: at,
         ...(direction === "out"
-          ? { lastContactAt: at, reminderAt: "", draft: "" }
+          ? {
+              lastContactAt: at,
+              reminderAt: "",
+              ...(clearDraft ? { draft: "" } : {}),
+            }
           : {}),
       },
       { paint: false },
@@ -353,7 +382,7 @@ async function addMessage(c, text, direction) {
     await messageRecorder.run(
       workspace(),
       c.id,
-      { text, direction },
+      { text, direction, expectedDraftVersion },
       async (body) => {
         await request(
           `/api/contacts/${encodeURIComponent(c.id)}/messages`,
@@ -1183,29 +1212,29 @@ document.addEventListener("click", async (e) => {
       if (!value) throw new Error("Write a message first.");
       let recorded = false;
       try {
-        await addMessage(c, value, "out");
+        const current = data.contacts.find((person) => person.id === c.id);
+        const expectedDraftVersion =
+          draftSaver.revision(c.id) === sentDraft.revision
+            ? (current.draftVersion ?? "")
+            : undefined;
+        await addMessage(c, value, "out", expectedDraftVersion);
         recorded = true;
       } finally {
         const changed = draftSaver.revision(c.id) !== sentDraft.revision;
-        // Recording an outgoing message clears its stored draft. Re-save any
-        // newer writing even if the write's acknowledgement was lost.
-        if (recorded || changed) {
-          const next = changed ? (drafts.get(c.id) ?? "") : "";
-          drafts.set(c.id, next);
-          draftSaver.stage(c.id, next);
-          const revision = draftSaver.revision(c.id);
-          if (!changed && selected === c.id && detailTab === "draft") {
-            $("#draft-text").value = "";
-            $("#word-count").textContent = "0 words";
-          }
+        // The server clears only the saved version that was sent. Never issue
+        // a cleanup PATCH that could overwrite another window's newer draft.
+        if (changed) {
           await flushDraft();
-          if (
-            recorded &&
-            !changed &&
-            sentDraft.field.isConnected &&
-            selected === c.id &&
-            draftSaver.revision(c.id) === revision
-          )
+        } else if (recorded) {
+          const next = data.contacts.find((person) => person.id === c.id).draft;
+          drafts.set(c.id, next);
+          if (selected === c.id && detailTab === "draft") {
+            $("#draft-text").value = next;
+            $("#word-count").textContent =
+              `${next.trim() ? next.trim().split(/\s+/).length : 0} words`;
+            paintDraftStatus();
+          }
+          if (!next && sentDraft.field.isConnected && selected === c.id)
             closeOverlay();
         }
       }

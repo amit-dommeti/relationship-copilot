@@ -68,13 +68,19 @@ Limits: the browser's unconfirmed identity is tab-memory only. Reloading, changi
 
 ## Recorded Send Completion
 
-The "I sent it" handler captures the person, text, editor element, and draft revision before awaiting autosave. A per-person pending lock spans autosave, message recording, refresh, and draft cleanup. It survives drawer redraws and participates in unload warnings and workspace/import guards.
+The "I sent it" handler captures the person, text, editor element, and local draft revision before awaiting autosave. A per-person pending lock spans autosave, message recording, and refresh. It survives drawer redraws and participates in unload warnings and workspace/import guards.
 
-`web/draft-saver.js` retains a monotonic revision per contact after acknowledgement. A later edit, including changing text and changing it back, invalidates the old action's permission to clear it. If the message operation finishes after newer writing, the latest draft is re-queued because the outgoing-record operation clears the server draft. This also runs after a failed acknowledgement. The existing save queue retains that newer edit if its follow-up write fails.
+`web/draft-saver.js` retains a monotonic revision per contact after acknowledgement. If writing changes before the initial flush finishes, the message is recorded without any draft-clear permission. Otherwise the composer supplies the saved contact's `draftVersion` as optional `expectedDraftVersion`.
 
-Only an unchanged editor still present from the click can be closed after cleanup. New typing during the empty-draft save is checked again; unrelated forms are never redrawn by completion. Tests hold real local message writes and draft saves to exercise both sides of these timing boundaries.
+Every ordinary contact save gets a fresh server-generated UUID `draftVersion`, even when the text is unchanged. Changing unrelated contact fields also invalidates a pending clear, conservatively. In the message transaction, a separate guarded update clears the draft only when the stored version and normalized sent text both match, message ordering allows the update, and the message identity has not already been inserted. That clear rotates the version too. Insert failure rolls back the clear and contact-state update together. The comparison reads current stored data, not the contact object fetched before the transaction.
 
-This remains single-tab coordination, not an atomic message-plus-newer-draft transaction across clients. Forced shutdown between the message write and follow-up draft save can still lose newer writing. No schema, message endpoint, AI prompt, or applied migration changes are part of this iteration.
+Omitting `expectedDraftVersion` preserves the draft. Conversation entries and older API callers therefore record history without clearing the composer. The empty-string guard explicitly matches only legacy/imported contacts without a version; new saves receive a token. Malformed guards reject before writes. Repeat imports retain an existing contact's protected draft and token. Tokens live in existing contact JSON, so no migration or historical-record rewrite is needed.
+
+Retry retains the original attempt's clear guard as well as its save identity. The browser never sends an unconditional cleanup PATCH. After refresh it displays the stored result if no local edit superseded the action, and keeps a preserved draft open. New local typing uses only the existing pending save queue. Demo mode uses equivalent explicit-version/text checks, with its existing browser-local persistence limits.
+
+Private contact-save acknowledgements retain their draft text/token pair with a tab-local sequence, including metadata-only saves because they rotate the same token. A refresh records the starting sequence and preserves draft acknowledgements that completed while its request was in flight, while taking other fields from the response. This prevents a delayed older snapshot from making the next send submit a stale version after a newer autosave already finished. The acknowledgement cache is volatile, not a new browser-persistent store.
+
+This closes the specific gap where recording an older send erased an already-saved newer draft and depended on the browser to repair it. It is not general conflict resolution for concurrent contact PATCH/import operations, durable recovery for unsaved tab text, or proof against hosted D1 faults. An already-open older browser bundle may still perform its old cleanup write; reload after updating. No AI prompt or applied migration changed.
 
 ## Known Boundaries
 

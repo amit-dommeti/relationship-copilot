@@ -35,7 +35,8 @@ const base = `http://localhost:${port}`,
     ? "assets/screenshots/v2"
     : "test-results";
 await mkdir(shots, { recursive: true });
-let browser;
+let browser, page;
+const errors = [];
 try {
   for (let n = 0; n < 100; n++) {
     if (output.includes("Relationship Copilot:")) break;
@@ -43,10 +44,9 @@ try {
     await new Promise((r) => setTimeout(r, 50));
   }
   browser = await chromium.launch();
-  const page = await browser.newPage({
+  page = await browser.newPage({
     viewport: { width: 1440, height: 1000 },
   });
-  const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(base + "/?demo=1");
   await page
@@ -376,6 +376,21 @@ try {
   console.log(
     "Browser checks passed: six routes at desktop/tablet/mobile, drafts, failed-save copying/retry/navigation, unsaved reload warning, empty-draft persistence, reply loop, circles, ZIP import, dedupe, persistence, demo isolation, calendar download.",
   );
+} catch (error) {
+  if (page && !page.isClosed()) {
+    console.error("Browser failure diagnostics:", {
+      url: page.url(),
+      errors,
+      status: await page
+        .locator('[role="status"], #toast')
+        .allTextContents()
+        .catch(() => []),
+    });
+    await page
+      .screenshot({ path: "test-results/browser-failure.png" })
+      .catch(() => {});
+  }
+  throw error;
 } finally {
   await browser?.close();
   const stopped = new Promise((r) => child.once("exit", r));

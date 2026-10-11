@@ -3,7 +3,13 @@ export function createMessageRecorder(newId = () => crypto.randomUUID()) {
   return {
     run(workspace, contactId, raw, send) {
       const key = JSON.stringify([workspace, contactId]);
-      const values = { text: raw.text.trim(), direction: raw.direction };
+      const values = {
+        text: raw.text.trim(),
+        direction: raw.direction,
+        ...(raw.expectedDraftVersion !== undefined
+          ? { expectedDraftVersion: raw.expectedDraftVersion }
+          : {}),
+      };
       let attempt = attempts.get(key);
       const same =
         attempt?.values.text === values.text &&
@@ -22,6 +28,7 @@ export function createMessageRecorder(newId = () => crypto.randomUUID()) {
       }
       // Keep the identity after failure, including a successful write whose
       // acknowledgement or following state refresh never reaches this tab.
+      // Keep the original draft-clear guard too: retry is not a new send.
       const pending = Promise.resolve()
         .then(() => send({ ...attempt.values, requestId: attempt.requestId }))
         .then((result) => {

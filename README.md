@@ -42,7 +42,7 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Retry without duplicate history:** retrying an unchanged message in the same tab reuses its save identity, even if the original save succeeded but its confirmation or following refresh failed. This covers saved replies and manually recorded sends, not LinkedIn delivery. After a reload, changed text, or a different tab, review history before recording again.
 
-**Keep writing while a send is recorded:** "I sent it" records the person and text you clicked. A slow completion preserves newer draft edits and leaves another conversation open. The pending control stays locked even after reopening the drawer. Nothing is sent to LinkedIn.
+**Keep writing while a send is recorded:** "I sent it" records the person and text you clicked. It clears only the matching saved draft version, so a delayed record cannot erase a newer saved draft. Saving separate outgoing conversation history leaves the composer alone. The pending control stays locked even after reopening the drawer. Nothing is sent to LinkedIn.
 
 ## Try It Locally
 

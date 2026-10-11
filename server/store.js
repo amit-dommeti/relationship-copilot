@@ -61,7 +61,9 @@ export class Store {
     );
   }
   async saveContact(owner, raw) {
-    const c = normalizeContact(raw);
+    // A fresh token makes even identical-text saves distinguishable. Any contact
+    // save conservatively invalidates an older action's permission to clear.
+    const c = { ...normalizeContact(raw), draftVersion: uid() };
     await this.contactStatement(owner, c).run();
     return c;
   }
@@ -154,9 +156,7 @@ export class Store {
     // newer reply state, reminders or drafts, even when requests arrive together.
     const now = nowISO();
     const fields =
-      m.direction === "out"
-        ? ", '$.lastContactAt', ?, '$.reminderAt', '', '$.draft', ''"
-        : "";
+      m.direction === "out" ? ", '$.lastContactAt', ?, '$.reminderAt', ''" : "";
     const statements = [
       ...(updateState
         ? [
@@ -169,6 +169,24 @@ export class Store {
               now,
               owner,
               contact.id,
+              at,
+              at,
+              owner,
+              m.id,
+            ),
+          ]
+        : []),
+      ...(updateState &&
+      m.direction === "out" &&
+      typeof raw.expectedDraftVersion === "string"
+        ? [
+            this.stmt(
+              "UPDATE contacts SET data=json_set(data, '$.draft', '', '$.draftVersion', ?) WHERE owner=? AND id=? AND COALESCE(json_extract(data,'$.draftVersion'),'')=? AND json_extract(data,'$.draft')=? AND COALESCE(json_extract(data,'$.latestMessageAt'),'') <= ? AND COALESCE(json_extract(data,'$.lastContactAt'),'') <= ? AND NOT EXISTS (SELECT 1 FROM messages WHERE owner=? AND id=?)",
+              uid(),
+              owner,
+              contact.id,
+              raw.expectedDraftVersion,
+              m.text,
               at,
               at,
               owner,

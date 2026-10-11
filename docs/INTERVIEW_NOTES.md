@@ -52,6 +52,12 @@ Evidence: a failing-before/fixed-after browser regression, an edit-revision unit
 
 Evidence: a failing-before/fixed-after browser restore, direct parity tests against local server storage, and simulated quota-failure/retry checks. No increase in adoption or successful real-user imports was measured.
 
+## Move Safety To The Durable Write
+
+"The first fix preserved newer writing by saving it again after recording a sent message. That still depended on the browser staying alive. I reproduced the remaining loss directly in storage, then made clearing the draft conditional on its saved version and exact text, in the same transaction as the message. Separate conversation-history entries now leave drafts alone. I chose an opaque version instead of text comparison alone because changing text and changing it back is still a newer edit."
+
+Evidence: local storage reproducer, version/identity/rollback tests, and retry-guard tests. This is a narrower durability guarantee, not general collaborative editing or a measured improvement in user trust.
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

@@ -8,6 +8,40 @@ const fixture = () => {
   return createMessageRecorder(() => `request-${++id}`);
 };
 
+test("retry retains the first attempt's draft guard, even if the saved version changed", async () => {
+  const recorder = fixture(),
+    sent = [];
+  await assert.rejects(
+    recorder.run(
+      "private",
+      "one",
+      {
+        text: "Already sent",
+        direction: "out",
+        expectedDraftVersion: "original-version",
+      },
+      async (body) => {
+        sent.push(body);
+        throw new Error("Lost acknowledgement");
+      },
+    ),
+  );
+  await recorder.run(
+    "private",
+    "one",
+    {
+      text: "Already sent",
+      direction: "out",
+      expectedDraftVersion: "new-version",
+    },
+    async (body) => {
+      sent.push(body);
+    },
+  );
+  assert.equal(sent[0].requestId, sent[1].requestId);
+  assert.equal(sent[1].expectedDraftVersion, "original-version");
+});
+
 test("failed recording and failed refresh keep the same request identity for retry", async () => {
   const recorder = fixture(),
     sent = [];
