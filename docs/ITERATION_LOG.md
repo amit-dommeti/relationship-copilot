@@ -2,6 +2,16 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Keep The Next Draft - October 10, 2026
+
+- Reproduced a delayed "I sent it" completion erasing a newer, already-saved draft: the browser regression expected the newer text and found an empty stored draft instead.
+- Captured the clicked person, text, and edit revision before autosave. Kept a per-person pending lock through completion, including drawer reopening. Workspace changes and imports wait for the complete operation.
+- Clear only the submitted edit; re-save newer writing after the outgoing record completes, including a lost acknowledgement. Check again after cleanup so typing during the empty-draft save survives. Do not close or redraw a different conversation/form.
+- Verified 49 unit/integration tests and the production build. Focused Chromium checks cover saved newer text, cursor/focus, text changed and restored, pending duplicate prevention, unrelated conversation input, switching people before autosave completes, typing during cleanup, and recovery after an actual local write with a dropped acknowledgement.
+- Full Chromium core-journey suite passed across desktop/tablet/mobile. Inspected synthetic desktop/mobile captures of the pending-recording control; no new portfolio screenshot was needed for this behavior-only change.
+- The change is current-tab coordination. Forced shutdown between recording and re-saving newer writing, concurrent devices, and other browser engines remain outside this guarantee. No live AI evaluation, LinkedIn access, external message sending, paid service, or private user fixture was used.
+- Publication is established by the native Site result and GitHub head, not inferred from this log.
+
 ## Retry Without Duplicate History - October 10, 2026
 
 - Reproduced the missing retry contract: two submissions of the same identified recording produced two history entries because the endpoint replaced the identity with a new one each time.

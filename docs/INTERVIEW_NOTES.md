@@ -40,6 +40,12 @@ Evidence: a failing-before/fixed-after browser test, six focused buffer tests, a
 
 Evidence: a failing-before/fixed-after API regression, transaction/concurrency tests, and browser fault injection after actual local writes. No live LinkedIn delivery or measured production incident reduction is claimed.
 
+## Reliability Iteration: A Completed Action Is Not Permission To Erase New Work
+
+"I tested what happens after clicking 'I sent it' and immediately starting another thought. A slow completion erased the newer saved draft. I made the action remember the exact person and edit that were clicked, then tested both delayed recording and delayed cleanup. The completion now leaves newer writing and other conversations alone. I kept the scope to same-tab behavior and documented the remaining shutdown and cross-device limits."
+
+Evidence: a failing-before/fixed-after browser regression, an edit-revision unit test, and controlled local timing/failure checks. This is a verified application behavior, not measured retention or AI writing-quality improvement.
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

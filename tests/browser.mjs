@@ -9,6 +9,7 @@ import { checkDraftGeneration } from "./draft-generation-browser.mjs";
 import { checkImportSafety } from "./import-safety-browser.mjs";
 import { checkReplyBuffer } from "./reply-buffer-browser.mjs";
 import { checkMessageRetries } from "./message-retry-browser.mjs";
+import { checkSentDraftSafety } from "./sent-draft-browser.mjs";
 
 const socket = createServer();
 await new Promise((resolve) => socket.listen(0, "127.0.0.1", resolve));
@@ -333,6 +334,7 @@ try {
   await checkImportSafety(page, base, shots);
   await checkReplyBuffer(page, base, shots);
   await checkMessageRetries(page, base);
+  await checkSentDraftSafety(page, base);
   await page.goto(base + "/?demo=1#today");
   await page
     .getByRole("heading", { name: "A little closer, one hello at a time." })

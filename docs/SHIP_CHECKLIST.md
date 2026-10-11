@@ -88,3 +88,18 @@ Reply buffers exist only in the current tab and require an explicit save. They a
 - [ ] Production D1 fault-injection/load test performed.
 
 The prior reply iteration's lost-acknowledgement gap is now covered for retained request identities. This is not a universal exactly-once guarantee or an outbound messaging integration.
+
+## Sent Draft Checks - October 10, 2026
+
+- [x] Delayed recorded send erasing newer saved writing reproduced before the fix.
+- [x] 49 unit/integration tests and production build pass.
+- [x] Full Chromium core-journey suite passes; focused send-timing check also passes independently.
+- [x] Newer draft, cursor/focus, and text edited back to its original value preserved.
+- [x] Pending lock survives reopening; duplicate action blocked.
+- [x] Click-time person/text captured before autosave; other people's drawers and Conversation input remain intact.
+- [x] Typing during cleanup and lost acknowledgement after an actual local write checked.
+- [x] Desktop/mobile pending-state captures inspected; no overflow or overlapping controls.
+- [x] Existing Site identity, private audience, API contract, and migrations unchanged.
+- [ ] Atomic preservation across forced shutdown or simultaneous clients implemented.
+
+The follow-up draft save uses existing recovery behavior. No external message, live model evaluation, or real-user data was used.

@@ -11,6 +11,25 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 
+test("draft revisions survive acknowledgement and distinguish restored text", async () => {
+  const saver = createDraftSaver(async () => {});
+  assert.equal(saver.revision("a"), 0);
+  saver.stage("a", "Original");
+  const submitted = saver.revision("a");
+  await saver.flush();
+  assert.equal(saver.revision("a"), submitted);
+  saver.stage("b", "Another person");
+  assert.equal(saver.revision("a"), submitted);
+  saver.stage("a", "New thought");
+  saver.stage("a", "Original");
+  await saver.flush();
+  assert.ok(saver.revision("a") > submitted);
+  saver.stage("a", "");
+  const cleared = saver.revision("a");
+  await saver.flush();
+  assert.equal(saver.revision("a"), cleared);
+});
+
 test("coalesces edits and persists an intentionally empty draft", async () => {
   const writes = [];
   const saver = createDraftSaver(async (...args) => writes.push(args));

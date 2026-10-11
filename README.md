@@ -40,6 +40,8 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Retry without duplicate history:** retrying an unchanged message in the same tab reuses its save identity, even if the original save succeeded but its confirmation or following refresh failed. This covers saved replies and manually recorded sends, not LinkedIn delivery. After a reload, changed text, or a different tab, review history before recording again.
 
+**Keep writing while a send is recorded:** "I sent it" records the person and text you clicked. A slow completion preserves newer draft edits and leaves another conversation open. The pending control stays locked even after reopening the drawer. Nothing is sent to LinkedIn.
+
 ## Try It Locally
 
 Requires Node.js 22.13+ (Node 24 LTS recommended).

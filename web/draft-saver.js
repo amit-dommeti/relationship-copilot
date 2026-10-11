@@ -1,6 +1,7 @@
 // Keep the latest edit until it is acknowledged, including an empty draft.
 export function createDraftSaver(save, onChange = () => {}) {
   const pending = new Map();
+  const revisions = new Map();
   let writing = null;
 
   async function drain() {
@@ -25,8 +26,12 @@ export function createDraftSaver(save, onChange = () => {}) {
 
   return {
     stage(id, value) {
+      revisions.set(id, (revisions.get(id) || 0) + 1);
       pending.set(id, { value, status: "pending" });
       onChange(id);
+    },
+    revision(id) {
+      return revisions.get(id) || 0;
     },
     flush() {
       if (!writing) {

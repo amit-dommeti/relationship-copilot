@@ -60,6 +60,16 @@ The receipt read uses the current ordinary D1 binding. Cloudflare documents that
 
 Limits: the browser's unconfirmed identity is tab-memory only. Reloading, changing the failed entry, or recording from another tab can create a distinct event. This is idempotency for a retained request identity, not universal exactly-once delivery. Nothing is sent externally. Browser tests drop a response after an actual temporary SQLite write and separately reject the following refresh; production D1 fault injection has not been performed.
 
+## Recorded Send Completion
+
+The "I sent it" handler captures the person, text, editor element, and draft revision before awaiting autosave. A per-person pending lock spans autosave, message recording, refresh, and draft cleanup. It survives drawer redraws and participates in unload warnings and workspace/import guards.
+
+`web/draft-saver.js` retains a monotonic revision per contact after acknowledgement. A later edit, including changing text and changing it back, invalidates the old action's permission to clear it. If the message operation finishes after newer writing, the latest draft is re-queued because the outgoing-record operation clears the server draft. This also runs after a failed acknowledgement. The existing save queue retains that newer edit if its follow-up write fails.
+
+Only an unchanged editor still present from the click can be closed after cleanup. New typing during the empty-draft save is checked again; unrelated forms are never redrawn by completion. Tests hold real local message writes and draft saves to exercise both sides of these timing boundaries.
+
+This remains single-tab coordination, not an atomic message-plus-newer-draft transaction across clients. Forced shutdown between the message write and follow-up draft save can still lose newer writing. No schema, message endpoint, AI prompt, or applied migration changes are part of this iteration.
+
 ## Known Boundaries
 
 This is not end-to-end encrypted. The hosting operator can access stored data. Protect backups and hosting access. Per-process request limiting is modest protection for an owner-private app, not a distributed anti-abuse system. Browser notifications require an open app; calendar alarms are delegated to the user's calendar. No scheduled LinkedIn sync exists.

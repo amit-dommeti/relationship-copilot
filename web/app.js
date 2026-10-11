@@ -151,6 +151,7 @@ let drafts = new Map(),
 const draftJobs = createDraftJobs();
 const replyBuffer = createReplyBuffer();
 const messageRecorder = createMessageRecorder();
+const sentDrafts = new Map();
 const workspace = () => (demo ? "demo" : "private");
 const draftSaver = createDraftSaver(
   (id, value) => updateContact(id, { draft: value }, { paint: false }),
@@ -196,11 +197,21 @@ function paintDraftGeneration() {
   button.innerHTML = `${i(busy ? "refresh-cw" : "sparkles")} ${label}`;
   icons();
 }
+function paintSentStatus() {
+  const button = overlay.querySelector('[data-action="mark-sent"]');
+  if (!button) return;
+  const busy = sentDrafts.has(selected);
+  button.disabled = busy;
+  button.setAttribute("aria-busy", String(busy));
+  button.innerHTML = `${i(busy ? "refresh-cw" : "check-check")} ${busy ? "Recording..." : "I sent it"}`;
+  icons();
+}
 window.addEventListener("beforeunload", (event) => {
   if (
     !draftSaver.hasUnsaved() &&
     !replyBuffer.hasUnsaved() &&
-    !messageRecorder.hasPending()
+    !messageRecorder.hasPending() &&
+    !sentDrafts.size
   )
     return;
   event.preventDefault();
@@ -654,6 +665,7 @@ function drawDetail(first = false) {
   }
   paintDraftStatus();
   paintDraftGeneration();
+  paintSentStatus();
   const replyForm = $("#reply-form");
   if (replyForm) {
     replyForm.dataset.contactId = c.id;
@@ -910,12 +922,27 @@ document.addEventListener("click", async (e) => {
   const c = selectedContact();
   e.preventDefault();
   if (target.disabled) return;
+  if (action === "mark-sent" && sentDrafts.has(c?.id)) return;
+  // Capture before awaiting autosave; the drawer and its text can change meanwhile.
+  const sentDraft =
+    action === "mark-sent" && c
+      ? {
+          field: $("#draft-text"),
+          value: $("#draft-text")?.value || "",
+          revision: draftSaver.revision(c.id),
+        }
+      : null;
+  if (sentDraft) {
+    sentDrafts.set(c.id, sentDraft);
+    draftJobs.invalidate(c.id);
+  }
   const draftJob = action === "draft" && c ? draftJobs.begin(c.id) : null;
   const requestedIntent = intent;
   if (action === "draft" && !draftJob) return;
   target.disabled = true;
   try {
     if (draftJob) paintDraftGeneration();
+    if (sentDraft) paintSentStatus();
     if (["demo", "exit-demo"].includes(action) && replyBuffer.hasUnsaved()) {
       openPerson(replyBuffer.firstUnsaved(workspace()), "conversation");
       throw new Error(
@@ -928,7 +955,7 @@ document.addEventListener("click", async (e) => {
       );
     if (
       ["demo", "exit-demo", "confirm-import"].includes(action) &&
-      messageRecorder.hasPending()
+      (messageRecorder.hasPending() || sentDrafts.size)
     )
       throw new Error(
         "Wait for your message to finish saving before switching workspaces or importing.",
@@ -1148,15 +1175,36 @@ document.addEventListener("click", async (e) => {
       await navigator.clipboard.writeText(value);
       notify("Copied. Give it one last read before sending.");
     } else if (action === "mark-sent") {
-      const value = $("#draft-text").value.trim();
+      const value = sentDraft?.value.trim();
       if (!value) throw new Error("Write a message first.");
-      draftJobs.invalidate(c.id);
-      await addMessage(c, value, "out");
-      drafts.set(c.id, "");
-      draftSaver.stage(c.id, "");
-      if (selected === c.id) drawDetail();
-      await flushDraft();
-      closeOverlay();
+      let recorded = false;
+      try {
+        await addMessage(c, value, "out");
+        recorded = true;
+      } finally {
+        const changed = draftSaver.revision(c.id) !== sentDraft.revision;
+        // Recording an outgoing message clears its stored draft. Re-save any
+        // newer writing even if the write's acknowledgement was lost.
+        if (recorded || changed) {
+          const next = changed ? (drafts.get(c.id) ?? "") : "";
+          drafts.set(c.id, next);
+          draftSaver.stage(c.id, next);
+          const revision = draftSaver.revision(c.id);
+          if (!changed && selected === c.id && detailTab === "draft") {
+            $("#draft-text").value = "";
+            $("#word-count").textContent = "0 words";
+          }
+          await flushDraft();
+          if (
+            recorded &&
+            !changed &&
+            sentDraft.field.isConnected &&
+            selected === c.id &&
+            draftSaver.revision(c.id) === revision
+          )
+            closeOverlay();
+        }
+      }
       render();
       notify(`A little closer to ${c.name.split(" ")[0]}.`);
     } else if (action === "reply-draft") {
@@ -1201,10 +1249,12 @@ document.addEventListener("click", async (e) => {
       true,
     );
   } finally {
+    if (sentDraft) sentDrafts.delete(c.id);
     if (draftJob) {
       draftJobs.finish(draftJob);
       paintDraftGeneration();
     } else if (target.isConnected) target.disabled = false;
+    paintSentStatus();
     paintReplyStatus();
   }
 });
