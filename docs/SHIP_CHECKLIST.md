@@ -186,3 +186,18 @@ This extends submitted-field safety to the relationship editor. No real data, pa
 - [ ] Circle lifecycle parity, person-form crash recovery, or idempotent creation retries implemented.
 
 Pending-save protection does not persist unsaved form values across closing, reload, or shutdown. Private data and external integrations are unchanged; native Site/GitHub results establish publication separately.
+
+## Atomic Circle Checks - October 12, 2026
+
+- [x] Browser failure leaving a half-created circle reproduced before the fix.
+- [x] Transaction rollback after metadata and all membership updates verified locally.
+- [x] Validation, ownership, untouched memberships, unrelated fields, and capacity race checked.
+- [x] Synthetic 10,000-member addition uses one two-statement transaction.
+- [x] Initial focused Chromium failure/retry, pending-form, and demo storage checks pass.
+- [x] Reviewed draft-version interaction repaired and independently rechecked.
+- [x] Final production build, all 84 automated tests, and expanded focused Chromium checks pass.
+- [x] Final desktop/mobile error-status captures reviewed.
+- [x] Complete Chromium suite passes on final build.
+- [ ] Lost-acknowledgement creation identity, metadata conflict resolution, and hosted D1 fault/load testing implemented.
+
+The all-or-nothing guarantee covers a circle save in the updated app. It does not turn imports, older open browser bundles, or arbitrary multi-device edits into one operation.

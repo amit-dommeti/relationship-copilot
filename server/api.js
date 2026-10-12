@@ -166,7 +166,7 @@ export async function api(request, env, identity) {
     if (path === "/api/circles" && method === "POST")
       return json(
         await store.saveCircle(owner, {
-          ...(await readJSON(request, 10000)),
+          ...(await readJSON(request, 600000)),
           id: uid(),
         }),
         201,
@@ -177,7 +177,7 @@ export async function api(request, env, identity) {
         return json({ error: "Circle not found." }, 404);
       return json(
         await store.saveCircle(owner, {
-          ...(await readJSON(request, 10000)),
+          ...(await readJSON(request, 600000)),
           id,
         }),
       );

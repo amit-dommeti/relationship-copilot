@@ -1,13 +1,13 @@
 import {
   nowISO,
   normalizeContact,
-  normalizeCircle,
   text,
   uid,
   dateValue,
 } from "../shared/domain.js";
 import { validateImport, importError } from "../shared/import-validation.js";
 import { prepareWorkspaceImport } from "../shared/import-plan.js";
+import { prepareCircleSave } from "../shared/circle-save.js";
 
 const contactFields = [
   "name",
@@ -140,13 +140,56 @@ export class Store {
     );
   }
   async saveCircle(owner, raw) {
-    const c = normalizeCircle(raw);
-    await this.stmt(
-      "INSERT INTO circles(owner,id,data) VALUES(?,?,?) ON CONFLICT(owner,id) DO UPDATE SET data=excluded.data",
-      owner,
-      c.id,
-      JSON.stringify(c),
-    ).run();
+    const { circle: c, membership } = prepareCircleSave(
+      raw?.membership === undefined ? [] : await this.list("contacts", owner),
+      raw,
+    );
+    const at = nowISO();
+    const statements = [
+      this.stmt(
+        "INSERT INTO circles(owner,id,data) VALUES(?,?,?) ON CONFLICT(owner,id) DO UPDATE SET data=excluded.data",
+        owner,
+        c.id,
+        JSON.stringify(c),
+      ),
+    ];
+    // Change only this circle's membership in the current stored arrays. The
+    // circle details and every affected person commit in one transaction.
+    // Draft text/version stay together: this operation cannot edit a draft.
+    if (membership.add.length)
+      statements.push(
+        this.stmt(
+          `UPDATE contacts SET data=json_set(data,'$.circleIds',
+        CASE WHEN json_array_length(data,'$.circleIds') >= 30 THEN json('circle capacity exceeded')
+        ELSE json_insert(json_extract(data,'$.circleIds'),'$[#]',?) END,
+          '$.updatedAt',?),updated_at=?
+        WHERE owner=? AND id IN (SELECT value FROM json_each(?))
+        AND NOT EXISTS (SELECT 1 FROM json_each(contacts.data,'$.circleIds') WHERE value=?)`,
+          c.id,
+          at,
+          at,
+          owner,
+          JSON.stringify(membership.add),
+          c.id,
+        ),
+      );
+    if (membership.remove.length)
+      statements.push(
+        this.stmt(
+          `UPDATE contacts SET data=json_set(data,'$.circleIds',
+        (SELECT json_group_array(value) FROM json_each(contacts.data,'$.circleIds') WHERE value<>?),
+          '$.updatedAt',?),updated_at=?
+        WHERE owner=? AND id IN (SELECT value FROM json_each(?))
+        AND EXISTS (SELECT 1 FROM json_each(contacts.data,'$.circleIds') WHERE value=?)`,
+          c.id,
+          at,
+          at,
+          owner,
+          JSON.stringify(membership.remove),
+          c.id,
+        ),
+      );
+    await this.db.batch(statements);
     return c;
   }
   async import(owner, payload) {

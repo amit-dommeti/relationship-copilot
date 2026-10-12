@@ -44,7 +44,6 @@ import {
 } from "lucide";
 import {
   normalizeContact,
-  normalizeCircle,
   uid,
   nowISO,
   dateValue,
@@ -61,6 +60,10 @@ import { demoState, mergeDemoImport } from "./demo.js";
 import { createDraftSaver } from "./draft-saver.js";
 import { createDraftJobs } from "./draft-jobs.js";
 import { personFormValues, changedPersonFields } from "./person-form.js";
+import {
+  circleMembershipChanges,
+  prepareCircleSave,
+} from "../shared/circle-save.js";
 const iconSet = {
   Sun,
   Users,
@@ -156,6 +159,8 @@ const sentDrafts = new Map();
 const draftAcknowledgements = new Map();
 const personForms = new WeakMap();
 const pendingPersonForms = new Set();
+const circleForms = new WeakMap();
+const pendingCircleForms = new Set();
 let draftWriteSerial = 0;
 const workspace = () => (demo ? "demo" : "private");
 const draftSaver = createDraftSaver(
@@ -217,7 +222,8 @@ window.addEventListener("beforeunload", (event) => {
     !replyBuffer.hasUnsaved() &&
     !messageRecorder.hasPending() &&
     !sentDrafts.size &&
-    !pendingPersonForms.size
+    !pendingPersonForms.size &&
+    !pendingCircleForms.size
   )
     return;
   event.preventDefault();
@@ -771,6 +777,17 @@ function circleForm(id) {
       "<p>Add people first, then bring them into this circle.</p>"
     }</div></fieldset><div class="form-actions">${btn("Cancel", "close", "", "quiet")}<button class="button primary" type="submit">${i("check")}Save circle</button></div></form>`,
   );
+  const form = $("#circle-form");
+  form
+    .querySelector(".form-actions")
+    .insertAdjacentHTML(
+      "beforebegin",
+      '<p class="small-caption" role="status" aria-live="polite"></p>',
+    );
+  circleForms.set(form, {
+    initial: new FormData(form).getAll("members"),
+    unconfirmed: new Set(),
+  });
 }
 let importAttempt;
 function importModal(paste = false) {
@@ -989,6 +1006,13 @@ document.addEventListener("click", async (e) => {
   if (action === "draft" && !draftJob) return;
   target.disabled = true;
   try {
+    if (
+      ["demo", "exit-demo", "confirm-import"].includes(action) &&
+      pendingCircleForms.size
+    )
+      throw new Error(
+        "Wait for this circle to finish saving before switching workspaces or importing.",
+      );
     if (
       ["demo", "exit-demo", "confirm-import"].includes(action) &&
       pendingPersonForms.size
@@ -1336,7 +1360,7 @@ document.addEventListener("submit", async (e) => {
   )
     return;
   e.preventDefault();
-  if (pendingPersonForms.has(form)) return;
+  if (pendingPersonForms.has(form) || pendingCircleForms.has(form)) return;
   const f = new FormData(form),
     values = Object.fromEntries(f.entries());
   const replyJob =
@@ -1356,7 +1380,22 @@ document.addEventListener("submit", async (e) => {
     personStatus.classList.remove("save-error");
     personStatus.textContent = "Saving...";
   }
+  const circleStatus =
+    form.id === "circle-form" ? form.querySelector('[role="status"]') : null;
+  const circleControls = circleStatus
+    ? [
+        ...form.querySelectorAll('input,textarea,select,[data-action="color"]'),
+      ].filter((control) => !control.disabled)
+    : [];
+  if (circleStatus) {
+    pendingCircleForms.add(form);
+    form.setAttribute("aria-busy", "true");
+    circleStatus.classList.remove("save-error");
+    circleStatus.textContent = "Saving circle and people...";
+    for (const control of circleControls) control.disabled = true;
+  }
   paintReplyStatus();
+  let circleConfirmed = false;
   try {
     if (form.id === "login-form") {
       await request("/api/login", "POST", values);
@@ -1423,32 +1462,59 @@ document.addEventListener("submit", async (e) => {
         );
     }
     if (form.id === "circle-form") {
-      const old = data.circles.find((g) => g.id === form.dataset.id),
-        body = { name: values.name, memory: values.memory, color: activeColor };
-      const g = demo
-        ? normalizeCircle({ ...body, id: old?.id })
-        : await request(
-            old ? `/api/circles/${old.id}` : "/api/circles",
-            old ? "PUT" : "POST",
-            body,
-          );
-      data.circles = old
-        ? data.circles.map((x) => (x.id === g.id ? g : x))
-        : [...data.circles, g];
+      const formState = circleForms.get(form);
+      if (!formState) throw new Error("Reopen this circle before saving.");
       const members = f.getAll("members");
-      for (const c of active())
-        if (members.includes(c.id) !== c.circleIds.includes(g.id))
-          await updateContact(
-            c.id,
-            {
-              circleIds: members.includes(c.id)
-                ? [...c.circleIds, g.id]
-                : c.circleIds.filter((x) => x !== g.id),
-            },
-            { paint: false },
+      const membership = circleMembershipChanges(
+        formState.initial,
+        members,
+        formState.unconfirmed,
+      );
+      const body = {
+        name: values.name,
+        memory: values.memory,
+        color: activeColor,
+        membership,
+      };
+      for (const id of [...membership.add, ...membership.remove])
+        formState.unconfirmed.add(id);
+      let g;
+      if (demo) {
+        const plan = prepareCircleSave(data.contacts, {
+          ...body,
+          id: form.dataset.id || undefined,
+        });
+        g = plan.circle;
+        const next = {
+          ...data,
+          contacts: plan.contacts,
+          circles: [...data.circles.filter((circle) => circle.id !== g.id), g],
+        };
+        try {
+          localStorage.setItem("rc-demo-v2", JSON.stringify(next));
+        } catch {
+          throw new Error(
+            "This browser couldn't save the circle. Your demo is unchanged.",
           );
-      if (demo) persistDemo();
-      closeOverlay();
+        }
+        data = next;
+      } else {
+        const id = form.dataset.id;
+        g = await request(
+          id ? `/api/circles/${id}` : "/api/circles",
+          id ? "PUT" : "POST",
+          body,
+        );
+      }
+      // Retain the confirmed identity even when the following refresh fails.
+      form.dataset.id = g.id;
+      circleConfirmed = true;
+      formState.initial = members;
+      formState.unconfirmed.clear();
+      for (const id of [...membership.add, ...membership.remove])
+        draftJobs.invalidate(id);
+      if (!demo) await refresh(false);
+      if (form.isConnected) closeOverlay();
       render();
       notify("Circle saved. Your shared chapter stays with you.");
     }
@@ -1502,9 +1568,22 @@ document.addEventListener("submit", async (e) => {
         "Save not confirmed. Your changes are still here.";
       personStatus.classList.add("save-error");
     }
-    notify(error.message, true);
+    if (circleStatus && form.isConnected) {
+      circleStatus.textContent = circleConfirmed
+        ? "Circle saved. We couldn't refresh the workspace. Try saving again."
+        : error instanceof TypeError
+          ? "Save not confirmed. Your circle details and selections are still here."
+          : error.message;
+      circleStatus.classList.add("save-error");
+    }
+    if (!circleStatus || !form.isConnected) notify(error.message, true);
   } finally {
     pendingPersonForms.delete(form);
+    pendingCircleForms.delete(form);
+    if (circleStatus) {
+      form.setAttribute("aria-busy", "false");
+      for (const control of circleControls) control.disabled = false;
+    }
     if (personStatus) {
       form.setAttribute("aria-busy", "false");
       button.setAttribute("aria-busy", "false");

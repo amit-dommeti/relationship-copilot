@@ -14,6 +14,10 @@ import { checkDemoImport } from "./demo-import-browser.mjs";
 import { checkContactPatches } from "./contact-patch-browser.mjs";
 import { checkPersonFormSafety } from "./person-form-browser.mjs";
 import { checkPersonSaveLifecycle } from "./person-save-browser.mjs";
+import {
+  checkCircleSave,
+  checkCircleDraftTiming,
+} from "./circle-save-browser.mjs";
 
 const socket = createServer();
 await new Promise((resolve) => socket.listen(0, "127.0.0.1", resolve));
@@ -342,6 +346,8 @@ try {
   await checkContactPatches(page, base);
   await checkPersonFormSafety(page, base);
   await checkPersonSaveLifecycle(page, base);
+  await checkCircleSave(page, base);
+  await checkCircleDraftTiming(page, base);
   await checkDemoImport(page, base);
   await page.goto(base + "/?demo=1#today");
   await page

@@ -1420,7 +1420,8 @@ input[type="checkbox"] {
   flex-shrink: 0;
 }
 .composer-meta .save-error,
-.reply-save-status.save-error {
+.reply-save-status.save-error,
+.form-stack .save-error {
   color: #ffc8ad;
 }
 #retry-draft[hidden] {

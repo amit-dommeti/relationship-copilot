@@ -2,6 +2,17 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Save The Whole Shared Circle - October 12, 2026
+
+- Reproduced a failed member request leaving a half-created circle: the browser still found the new circle even though its selected person was not added. The editor previously saved metadata and then one contact at a time.
+- Added optional membership deltas to the existing circle save. Shared validation and one transaction now cover metadata and all selected additions/removals. Updates modify only this circle ID in current membership arrays, preserving unrelated circles and relationship data; metadata-only callers remain compatible.
+- The editor sends only changed checkbox intent, retaining unconfirmed changes for retry. Save locks circle inputs, duplicate submissions, workspace changes, and import confirmation until settled. Delayed completion leaves replacement editors alone. Confirmed creation retains its ID even if the following refresh fails.
+- Demo saves persist one complete next state before replacing in-memory data. A simulated storage failure leaves the existing circle and contact collections intact, with retained inputs for retry.
+- Ten focused unit/integration tests pass, including rollback after every planned write, owner/validation boundaries, concurrent unrelated changes, capacity races, and 10,000 synthetic membership additions in one two-statement batch. Initial focused browser checks passed for failure/retry, stale untouched membership, lost-confirmation reversions, pending controls, unrelated editors, refresh-failure identity, and demo storage/reload isolation.
+- Independent review reproduced a draft-version/refresh interaction in the initial implementation. Membership-only saves now preserve draft text and token together, so they cannot invalidate a newer autosave acknowledgement. Independent re-review found no remaining issue in the narrow fix. The final production build, all 84 automated tests, expanded focused Chromium checks, and complete desktop/tablet/mobile browser suite pass, including delayed refresh followed by membership change and the next recorded send. Desktop/mobile error-status captures were inspected; existing portfolio layouts remain representative.
+- No private contact data, LinkedIn/email access, AI evaluation, paid services, access changes, or applied migration changes. Limits include same-field metadata conflicts, lost-acknowledgement creation retries, old open bundles, and unsaved-form shutdown loss. No user-outcome or production-load claim is made.
+- Publication is established separately by the native Site success and GitHub head.
+
 ## Keep Editing During A Slow Save - October 12, 2026
 
 - Reproduced a delayed relationship save closing the form and discarding text entered after Save. The generic submit selector also disabled Cancel instead of Save; it now prioritizes the explicit submit control.

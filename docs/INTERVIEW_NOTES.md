@@ -74,6 +74,12 @@ Evidence: local storage reproducer, version/identity/rollback tests, and retry-g
 
 Evidence: controlled local browser timing tests, including before/after failures and a delayed acknowledgement after a real temporary-storage write. This is an application reliability improvement, not measured user retention or AI quality. Deliberate scope limits include circle forms, forced shutdown, and lost-confirmation creation retries.
 
+## Reliability Iteration: A Circle Is One User Action
+
+"The user thinks Save circle is one action, but it was a sequence of unrelated writes. I reproduced a failure leaving a named circle without its selected coworker, then made the details and membership commit together. I used checkbox changes rather than replacing every person's circle list, so a stale editor could not erase a different shared chapter. I tested failure after all planned writes, not just before the request, and carried the same all-or-nothing behavior into the demo."
+
+Evidence: before/after browser regression, local rollback and boundary tests, a synthetic 10,000-member transaction, and independent review of the draft-version interaction. Scope limits remain explicit: no hosted load test, real-user impact measurement, general conflict resolution, or idempotent creation retry after a lost acknowledgement.
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

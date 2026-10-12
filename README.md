@@ -46,6 +46,8 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Keep editing relationship notes:** slow person saves leave newer typing in place and tell you what still needs saving. Repeat submissions are blocked, and a late confirmation cannot close a different editor. Continuing after a confirmed creation updates that same person. Closing an unsaved form still discards its unsaved values; this is not crash recovery. [Behavior and limits](docs/ARCHITECTURE.md#relationship-form-edits).
 
+**Save the whole circle:** shared context and selected membership changes now save together or roll back together. A failed save keeps your selections for retry. Changes to one circle leave other memberships intact; untouched checkboxes preserve newer updates. The demo also keeps its previous state if browser storage fails. [Behavior and limits](docs/ARCHITECTURE.md#atomic-circle-saves).
+
 ## Try It Locally
 
 Requires Node.js 22.13+ (Node 24 LTS recommended).
