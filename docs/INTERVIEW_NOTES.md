@@ -12,6 +12,10 @@
 - **Execution:** real browser captures and automated tests across screen sizes; portable hosting path.
 - **Learning honesty:** the build is tested; user retention, writing preference, and live integration are not validated.
 
+## Reliability Iteration: Only Changed Fields Are Writes
+
+"A storage fix was not enough. The editor still sent every visible field, so changing a note could undo another window's company update or round an exact conversation time to midnight. I reproduced that through the real form, captured its opening values, and sent only intentional changes. I kept new-person creation complete and tested clearing values as well as preserving them. The boundary remains explicit: this is not a collaborative same-field merge."
+
 ## Reliability Iteration: Two Successful Saves Can Still Lose Work
 
 "I reproduced two overlapping saves that both reported success, while a reminder update silently restored old relationship notes. The problem was saving a whole contact assembled from an earlier read. I changed the storage operation to merge only submitted fields into the current record, then tested a new reply and a deletion arriving between the read and write. I kept the guarantee narrow: unrelated fields survive, but same-field edits and full imports still need a separate conflict strategy."

@@ -157,3 +157,18 @@ The final full-suite release gate now passes. The earlier intermittent timeouts 
 - [ ] General same-field/import conflict resolution or hosted D1 fault/load testing performed.
 
 The fix preserves unsubmitted fields during server PATCH writes. It does not promise automatic merging of same-field edits, conflict-free forms/imports, or real-time LinkedIn access. No visible layout change requires a new portfolio screenshot.
+
+## Relationship Form Checks - October 12, 2026
+
+- [x] Note-only form edit reverting a newer company reproduced before the fix.
+- [x] 74 unit/integration tests and final production build pass.
+- [x] Focused browser checks preserve newer company/role/circles and exact conversation timestamps.
+- [x] Imported rhythm displays accurately; unchanged saves issue no write; explicit clears/date/circle edits persist.
+- [x] Initial full Chromium suite, rejected-save retry, and desktop/mobile form captures verified.
+- [x] Reviewed lost-acknowledgement revert regression reproduced in unit and browser tests; submitted-field retry intent implemented.
+- [x] Complete Chromium suite passes on final application code after the reviewed retry fix.
+- [x] Final focused browser rerun passes after strengthening request-specific failure synchronization.
+- [x] Server/API contracts, applied migrations, Site identity, owner-private audience, and AI configuration unchanged.
+- [ ] Same-field merge or pending-form/shutdown recovery implemented.
+
+This extends submitted-field safety to the relationship editor. No real data, paid services, or outbound actions were used.

@@ -60,6 +60,7 @@ import { createMessageRecorder } from "./message-recorder.js";
 import { demoState, mergeDemoImport } from "./demo.js";
 import { createDraftSaver } from "./draft-saver.js";
 import { createDraftJobs } from "./draft-jobs.js";
+import { personFormValues, changedPersonFields } from "./person-form.js";
 const iconSet = {
   Sun,
   Users,
@@ -153,6 +154,7 @@ const replyBuffer = createReplyBuffer();
 const messageRecorder = createMessageRecorder();
 const sentDrafts = new Map();
 const draftAcknowledgements = new Map();
+const personForms = new WeakMap();
 let draftWriteSerial = 0;
 const workspace = () => (demo ? "demo" : "private");
 const draftSaver = createDraftSaver(
@@ -730,11 +732,20 @@ function personForm(id) {
     circleIds: [],
     cadence: 60,
   };
+  const cadence = Math.max(7, Math.min(365, Number(c.cadence) || 60));
+  const rhythms = [...new Set([14, 30, 60, 90, 180, 365, cadence])].sort(
+    (a, b) => a - b,
+  );
   modalName = "person";
   modal(
     c.id ? "Edit relationship" : "Add someone to your corner",
-    `<form id="person-form" data-id="${c.id || ""}" class="form-stack"><label>Name<input name="name" value="${esc(c.name)}" placeholder="Their name" maxlength="120" required></label><div class="field-grid"><label>Current company<input name="company" value="${esc(c.company)}" maxlength="150" placeholder="Where they work now"></label><label>Role<input name="role" value="${esc(c.role)}" maxlength="200" placeholder="What they do"></label></div><label>LinkedIn profile<input name="url" type="url" value="${esc(c.url)}" placeholder="https://www.linkedin.com/in/..." maxlength="500"></label><label>How do you know each other?<textarea name="memory" placeholder="We worked together on..." maxlength="4000">${esc(c.memory)}</textarea></label><label>A reason to say hello<input name="reason" value="${esc(c.reason)}" maxlength="1000" placeholder="Optional: a shared memory, a question, an update"></label><div class="field-grid"><label>Check-in rhythm<select name="cadence">${[14, 30, 60, 90, 180, 365].map((n) => `<option value="${n}" ${c.cadence === n ? "selected" : ""}>Every ${n} days</option>`).join("")}</select></label><label>Last time you spoke<input name="lastContactAt" type="date" value="${c.lastContactAt ? localDate(c.lastContactAt).slice(0, 10) : ""}"></label></div><fieldset style="border:0;padding:0;margin:0"><legend class="detail-label">Circles</legend><div class="row wrap">${data.circles.map((g) => `<label class="checkbox-row"><input type="checkbox" name="circleIds" value="${g.id}" ${c.circleIds.includes(g.id) ? "checked" : ""}>${esc(g.name)}</label>`).join("") || "<p>Create a circle later to remember your shared chapter.</p>"}</div></fieldset><div class="form-actions">${btn("Cancel", "close", "", "quiet")}<button class="button primary" type="submit">${i("check")}Save person</button></div></form>`,
+    `<form id="person-form" data-id="${c.id || ""}" class="form-stack"><label>Name<input name="name" value="${esc(c.name)}" placeholder="Their name" maxlength="120" required></label><div class="field-grid"><label>Current company<input name="company" value="${esc(c.company)}" maxlength="150" placeholder="Where they work now"></label><label>Role<input name="role" value="${esc(c.role)}" maxlength="200" placeholder="What they do"></label></div><label>LinkedIn profile<input name="url" type="url" value="${esc(c.url)}" placeholder="https://www.linkedin.com/in/..." maxlength="500"></label><label>How do you know each other?<textarea name="memory" placeholder="We worked together on..." maxlength="4000">${esc(c.memory)}</textarea></label><label>A reason to say hello<input name="reason" value="${esc(c.reason)}" maxlength="1000" placeholder="Optional: a shared memory, a question, an update"></label><div class="field-grid"><label>Check-in rhythm<select name="cadence">${rhythms.map((n) => `<option value="${n}" ${cadence === n ? "selected" : ""}>Every ${n} days</option>`).join("")}</select></label><label>Last time you spoke<input name="lastContactAt" type="date" value="${c.lastContactAt ? localDate(c.lastContactAt).slice(0, 10) : ""}"></label></div><fieldset style="border:0;padding:0;margin:0"><legend class="detail-label">Circles</legend><div class="row wrap">${data.circles.map((g) => `<label class="checkbox-row"><input type="checkbox" name="circleIds" value="${g.id}" ${c.circleIds.includes(g.id) ? "checked" : ""}>${esc(g.name)}</label>`).join("") || "<p>Create a circle later to remember your shared chapter.</p>"}</div></fieldset><div class="form-actions">${btn("Cancel", "close", "", "quiet")}<button class="button primary" type="submit">${i("check")}Save person</button></div></form>`,
   );
+  const form = $("#person-form");
+  personForms.set(form, {
+    initial: personFormValues(new FormData(form)),
+    unconfirmed: new Set(),
+  });
 }
 function circleForm(id) {
   const g = data.circles.find((g) => g.id === id) || { color: "green" };
@@ -1327,12 +1338,17 @@ document.addEventListener("submit", async (e) => {
       await refresh();
     }
     if (form.id === "person-form") {
-      const old = data.contacts.find((c) => c.id === form.dataset.id),
-        body = {
-          ...values,
-          circleIds: f.getAll("circleIds"),
-          cadence: Number(values.cadence),
-        };
+      const editing = Boolean(form.dataset.id),
+        formState = personForms.get(form),
+        current = personFormValues(f);
+      if (
+        !formState ||
+        (editing && !data.contacts.some((c) => c.id === form.dataset.id))
+      )
+        throw new Error("Reopen this person before saving.");
+      const body = editing
+        ? changedPersonFields(formState.initial, current, formState.unconfirmed)
+        : current;
       if (
         values.url &&
         !/^https:\/\/(www\.)?linkedin\.com\/in\//i.test(values.url)
@@ -1340,16 +1356,25 @@ document.addEventListener("submit", async (e) => {
         throw new Error(
           "Use a LinkedIn profile URL beginning https://www.linkedin.com/in/.",
         );
-      if (old) {
-        draftJobs.invalidate(old.id);
-        await updateContact(old.id, body, { paint: false });
+      if (editing) {
+        if (Object.keys(body).length) {
+          draftJobs.invalidate(form.dataset.id);
+          for (const key of Object.keys(body)) formState.unconfirmed.add(key);
+          await updateContact(form.dataset.id, body, { paint: false });
+        } else await refresh(false);
       } else if (demo) {
         data.contacts.push(normalizeContact(body));
         persistDemo();
       } else data.contacts.push(await request("/api/contacts", "POST", body));
       closeOverlay();
       render();
-      notify(old ? "Relationship updated." : "One more person in your corner.");
+      notify(
+        editing
+          ? Object.keys(body).length
+            ? "Relationship updated."
+            : "No changes to save."
+          : "One more person in your corner.",
+      );
     }
     if (form.id === "circle-form") {
       const old = data.circles.find((g) => g.id === form.dataset.id),

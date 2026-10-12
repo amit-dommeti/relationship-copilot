@@ -12,6 +12,7 @@ import { checkMessageRetries } from "./message-retry-browser.mjs";
 import { checkSentDraftSafety } from "./sent-draft-browser.mjs";
 import { checkDemoImport } from "./demo-import-browser.mjs";
 import { checkContactPatches } from "./contact-patch-browser.mjs";
+import { checkPersonFormSafety } from "./person-form-browser.mjs";
 
 const socket = createServer();
 await new Promise((resolve) => socket.listen(0, "127.0.0.1", resolve));
@@ -338,6 +339,7 @@ try {
   await checkMessageRetries(page, base);
   await checkSentDraftSafety(page, base);
   await checkContactPatches(page, base);
+  await checkPersonFormSafety(page, base);
   await checkDemoImport(page, base);
   await page.goto(base + "/?demo=1#today");
   await page

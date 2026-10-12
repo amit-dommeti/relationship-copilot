@@ -2,6 +2,19 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Edit Only What You Meant To Change - October 12, 2026
+
+- Reproduced a note-only relationship edit restoring an older company after another update arrived while the form was open. The form sent every control, defeating the preceding server-side submitted-field protection.
+- Capture each form's opening control values in a weakly held, tab-memory snapshot. Updates send only changed fields; new-person creation still sends the complete form. Unchanged forms without an unconfirmed save refresh saved state without a write. Failed attempts retain the same baseline for retry.
+- Preserve exact last-contact timestamps when the displayed date was not edited. Include the person's existing check-in rhythm in the select options instead of falling back to an unrelated preset. Explicit clears, dates, rhythms, and circle changes remain writable.
+- Verified 74 unit/integration tests, including five form snapshot/change-detection/retry tests, and the final production build. Focused Chromium regression passes for newer company/role/circles, recorded conversation timestamps, a 21-day rhythm, no-op saves, and intentional clearing/date/circle edits.
+- Initial full Chromium checks passed, including failed-save/retry and desktop/mobile form framing. Inspected synthetic form captures; existing portfolio screenshots remain representative.
+- Independent review caught an ambiguous-save regression: after a committed write with a lost response, reverting to the opening value was treated as a no-op. Reproduced with unit and real browser tests that commit the write then abort its response. Retain unconfirmed submitted fields and send their latest values on retry, including intended reverts. Re-review found no further application regression.
+- The final application code passed the complete Chromium core-journey suite, including the lost-acknowledgement revert. Review also identified a test wait that watched the wrong button; strengthened it to await the exact failed request and completed handler cleanup. The corrected focused browser check passed afterward. No assertion or timeout was weakened.
+- No real contacts, model calls, LinkedIn access, account changes, or applied migration changes were used.
+- Limits: no same-field merge, multi-device conflict UI, person-form crash recovery, or pending-form lifecycle redesign. Retry intent lasts only in the still-open form. An explicit circle edit still replaces the submitted circle list. Old open bundles require reload. No user outcome or AI-quality improvement is claimed.
+- Publication is established by the native Site result and GitHub head, not inferred from this log.
+
 ## Save Only What Changed - October 12, 2026
 
 - Reproduced two overlapping successful PATCH requests that silently restored old relationship notes while setting a reminder. Controlled read/write interleaving also reproduced loss of a new reply's state, an ineffective stale-write guard, and resurrection of a deleted contact.

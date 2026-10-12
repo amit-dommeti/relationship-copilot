@@ -90,6 +90,14 @@ The optional `expectedUpdatedAt` check runs in the write predicate, returning a 
 
 Tests force both requests to read the old contact before either writes, interleave a message record or deletion after a read, check explicit clearing and owner/provenance boundaries, and reject an injected write failure. A further regression inserts a newer identical-text draft between a write and its acknowledgement, then verifies the older send cannot clear it. These are local SQLite/API tests, not hosted D1 fault/load tests. Same-field edits still use last-write-wins unless a usable timestamp guard is supplied; current forms do not supply it. A form submitting an unchanged field can still overwrite a concurrent edit to that field. Full-record import conflicts, arbitrary out-of-order UI responses, and browser-local demo cross-tab conflicts are not resolved by this server fix.
 
+## Relationship Form Edits
+
+The relationship editor builds a typed form snapshot when opened and stores it in a `WeakMap` keyed by that form element. `web/person-form.js` compares current control values to this opening snapshot, not to a potentially refreshed contact object. Only changed fields are sent in a new edit; creation still sends all form fields. Circle order alone is not a change, while an explicit clear is. Before each write, submitted fields are retained as unconfirmed. Their latest values are always included on retry, even if restored to the opening values, because a lost acknowledgement may have committed the previous edit. Recovery is limited to that still-open form; no persistent private-data cache was added.
+
+An unchanged form with no unconfirmed attempt performs a read refresh with no contact write or draft-token rotation. Errors keep the baseline and submitted-field set for retry. The regression suite exercises both rejected writes and a real local write whose response is deliberately dropped, followed by an intended revert.
+
+Comparing the actual displayed controls preserves a last-contact timestamp's time-of-day when the user never edits its date control. The cadence select includes the existing normalized rhythm, including nonpreset imported values. This narrows stale-form overwrites but does not merge two intentional edits to the same field. Circle edits still replace that list; imports and pending-form lifecycle remain separate concerns.
+
 ## Known Boundaries
 
 This is not end-to-end encrypted. The hosting operator can access stored data. Protect backups and hosting access. Per-process request limiting is modest protection for an owner-private app, not a distributed anti-abuse system. Browser notifications require an open app; calendar alarms are delegated to the user's calendar. No scheduled LinkedIn sync exists.
