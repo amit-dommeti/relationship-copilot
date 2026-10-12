@@ -96,7 +96,11 @@ The relationship editor builds a typed form snapshot when opened and stores it i
 
 An unchanged form with no unconfirmed attempt performs a read refresh with no contact write or draft-token rotation. Errors keep the baseline and submitted-field set for retry. The regression suite exercises both rejected writes and a real local write whose response is deliberately dropped, followed by an intended revert.
 
-Comparing the actual displayed controls preserves a last-contact timestamp's time-of-day when the user never edits its date control. The cadence select includes the existing normalized rhythm, including nonpreset imported values. This narrows stale-form overwrites but does not merge two intentional edits to the same field. Circle edits still replace that list; imports and pending-form lifecycle remain separate concerns.
+Comparing the actual displayed controls preserves a last-contact timestamp's time-of-day when the user never edits its date control. The cadence select includes the existing normalized rhythm, including nonpreset imported values. This narrows stale-form overwrites but does not merge two intentional edits to the same field. Circle edits still replace that list; imports remain a separate concern.
+
+Person saves capture submitted values and lock the actual submit button, with a pending-form set blocking repeated submit events. Acknowledgement advances that form's baseline to the submitted snapshot and clears its unconfirmed-field set. If current controls differ, the same editor stays open with its focus and selection intact and an inline reminder to save newer changes. A completion only closes its own still-connected, unchanged form, never a replacement editor. Successful creation attaches the returned ID so continued typing becomes an update; insertion skips an ID already loaded by background refresh, preserving that newer entry.
+
+Pending person saves participate in unload warnings and block private/demo changes and confirmed imports until settled, including after closing the form. This is not an unsaved-form buffer: Cancel/Escape still discards unsaved form values, and warnings do not protect unsaved forms after requests finish or guarantee recovery on forced shutdown. Lost creation acknowledgements can still produce duplicates on retry because creation has no retained idempotency key. Circle/reminder/preference save lifecycles and arbitrary response ordering are outside this change.
 
 ## Known Boundaries
 

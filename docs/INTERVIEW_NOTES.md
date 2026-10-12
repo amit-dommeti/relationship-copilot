@@ -68,6 +68,12 @@ Evidence: a failing-before/fixed-after browser restore, direct parity tests agai
 
 Evidence: local storage reproducer, version/identity/rollback tests, and retry-guard tests. This is a narrower durability guarantee, not general collaborative editing or a measured improvement in user trust.
 
+## Reliability Iteration: Save Is A Snapshot, Not The End Of Editing
+
+"I reproduced a slow relationship save deleting the next sentence the user typed. I made confirmation acknowledge only the clicked snapshot, keep newer work in place, and leave a different open editor alone. I also tested continuing to type while adding a new person: the next save must update that identity, not create another contact. Independent review found a refresh arriving before creation confirmation could duplicate the displayed person, so I reproduced and fixed that ordering too."
+
+Evidence: controlled local browser timing tests, including before/after failures and a delayed acknowledgement after a real temporary-storage write. This is an application reliability improvement, not measured user retention or AI quality. Deliberate scope limits include circle forms, forced shutdown, and lost-confirmation creation retries.
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

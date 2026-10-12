@@ -44,6 +44,8 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Keep writing while a send is recorded:** "I sent it" records the person and text you clicked. It clears only the matching saved draft version, so a delayed record cannot erase a newer saved draft. Saving separate outgoing conversation history leaves the composer alone. The pending control stays locked even after reopening the drawer. Nothing is sent to LinkedIn.
 
+**Keep editing relationship notes:** slow person saves leave newer typing in place and tell you what still needs saving. Repeat submissions are blocked, and a late confirmation cannot close a different editor. Continuing after a confirmed creation updates that same person. Closing an unsaved form still discards its unsaved values; this is not crash recovery. [Behavior and limits](docs/ARCHITECTURE.md#relationship-form-edits).
+
 ## Try It Locally
 
 Requires Node.js 22.13+ (Node 24 LTS recommended).

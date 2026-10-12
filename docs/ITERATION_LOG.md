@@ -2,6 +2,18 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Keep Editing During A Slow Save - October 12, 2026
+
+- Reproduced a delayed relationship save closing the form and discarding text entered after Save. The generic submit selector also disabled Cancel instead of Save; it now prioritizes the explicit submit control.
+- Keep one pending operation per person form. On confirmation, advance only its submitted baseline, retain newer values/focus/selection in the existing editor, and show a persistent status. A late completion cannot close a replacement form. Errors preserve the previous baseline and unconfirmed-field retry intent.
+- Successful creation retains its returned identity for subsequent edits. Independent review caught duplicate browser rows when a background refresh saw the committed creation before its delayed acknowledgement. Reproduced two rows in Chromium; insert only an absent ID, preserving the newer refreshed record.
+- Pending person saves now warn before unload and block workspace changes/import confirmation. No new persistent copy of private relationship notes was introduced.
+- Verified 74 unit/integration tests and production build. Initial complete Chromium suite passed. Final expanded focused and complete Chromium suites pass after the reviewed repair, including existing import/draft/reply protections and desktop/tablet/mobile routes. Desktop/mobile status captures were inspected; no portfolio layout refresh was needed. Independent re-review found no further high-confidence issue.
+- New synthetic checks cover delayed success, changed-back values, rejected-save/latest retry, no-op refresh typing, duplicate submit events, focus/selection, unrelated editors, workspace/unload guards, continued creation, and post-commit delayed acknowledgement. Test setup corrections included waiting for routed requests during teardown, selecting one of two Add person controls, and matching the actual company row/search filter.
+- No real contact data, AI calls, external access, paid services, sharing changes, server contract changes, or applied migration changes.
+- Limits: not form autosave/crash recovery, general cross-device conflict resolution, circle-form lifecycle protection, or idempotent creation after a lost acknowledgement. Explicitly closing a form still discards its unsaved values. No user-outcome or AI-quality uplift is claimed.
+- Publication must be confirmed by native Site success and the GitHub head.
+
 ## Edit Only What You Meant To Change - October 12, 2026
 
 - Reproduced a note-only relationship edit restoring an older company after another update arrived while the form was open. The form sent every control, defeating the preceding server-side submitted-field protection.

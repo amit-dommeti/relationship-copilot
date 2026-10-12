@@ -155,6 +155,7 @@ const messageRecorder = createMessageRecorder();
 const sentDrafts = new Map();
 const draftAcknowledgements = new Map();
 const personForms = new WeakMap();
+const pendingPersonForms = new Set();
 let draftWriteSerial = 0;
 const workspace = () => (demo ? "demo" : "private");
 const draftSaver = createDraftSaver(
@@ -215,7 +216,8 @@ window.addEventListener("beforeunload", (event) => {
     !draftSaver.hasUnsaved() &&
     !replyBuffer.hasUnsaved() &&
     !messageRecorder.hasPending() &&
-    !sentDrafts.size
+    !sentDrafts.size &&
+    !pendingPersonForms.size
   )
     return;
   event.preventDefault();
@@ -742,6 +744,12 @@ function personForm(id) {
     `<form id="person-form" data-id="${c.id || ""}" class="form-stack"><label>Name<input name="name" value="${esc(c.name)}" placeholder="Their name" maxlength="120" required></label><div class="field-grid"><label>Current company<input name="company" value="${esc(c.company)}" maxlength="150" placeholder="Where they work now"></label><label>Role<input name="role" value="${esc(c.role)}" maxlength="200" placeholder="What they do"></label></div><label>LinkedIn profile<input name="url" type="url" value="${esc(c.url)}" placeholder="https://www.linkedin.com/in/..." maxlength="500"></label><label>How do you know each other?<textarea name="memory" placeholder="We worked together on..." maxlength="4000">${esc(c.memory)}</textarea></label><label>A reason to say hello<input name="reason" value="${esc(c.reason)}" maxlength="1000" placeholder="Optional: a shared memory, a question, an update"></label><div class="field-grid"><label>Check-in rhythm<select name="cadence">${rhythms.map((n) => `<option value="${n}" ${cadence === n ? "selected" : ""}>Every ${n} days</option>`).join("")}</select></label><label>Last time you spoke<input name="lastContactAt" type="date" value="${c.lastContactAt ? localDate(c.lastContactAt).slice(0, 10) : ""}"></label></div><fieldset style="border:0;padding:0;margin:0"><legend class="detail-label">Circles</legend><div class="row wrap">${data.circles.map((g) => `<label class="checkbox-row"><input type="checkbox" name="circleIds" value="${g.id}" ${c.circleIds.includes(g.id) ? "checked" : ""}>${esc(g.name)}</label>`).join("") || "<p>Create a circle later to remember your shared chapter.</p>"}</div></fieldset><div class="form-actions">${btn("Cancel", "close", "", "quiet")}<button class="button primary" type="submit">${i("check")}Save person</button></div></form>`,
   );
   const form = $("#person-form");
+  form
+    .querySelector(".form-actions")
+    .insertAdjacentHTML(
+      "beforebegin",
+      '<p class="small-caption" role="status" aria-live="polite"></p>',
+    );
   personForms.set(form, {
     initial: personFormValues(new FormData(form)),
     unconfirmed: new Set(),
@@ -981,6 +989,13 @@ document.addEventListener("click", async (e) => {
   if (action === "draft" && !draftJob) return;
   target.disabled = true;
   try {
+    if (
+      ["demo", "exit-demo", "confirm-import"].includes(action) &&
+      pendingPersonForms.size
+    )
+      throw new Error(
+        "Wait for this person to finish saving before switching workspaces or importing.",
+      );
     if (draftJob) paintDraftGeneration();
     if (sentDraft) paintSentStatus();
     if (["demo", "exit-demo"].includes(action) && replyBuffer.hasUnsaved()) {
@@ -1321,6 +1336,7 @@ document.addEventListener("submit", async (e) => {
   )
     return;
   e.preventDefault();
+  if (pendingPersonForms.has(form)) return;
   const f = new FormData(form),
     values = Object.fromEntries(f.entries());
   const replyJob =
@@ -1328,8 +1344,18 @@ document.addEventListener("submit", async (e) => {
       ? replyBuffer.begin(workspace(), form.dataset.contactId, values)
       : null;
   if (form.id === "reply-form" && !replyJob) return;
-  const button = form.querySelector('[type="submit"],button');
+  const button =
+    form.querySelector('[type="submit"]') || form.querySelector("button");
   if (button) button.disabled = true;
+  const personStatus =
+    form.id === "person-form" ? form.querySelector('[role="status"]') : null;
+  if (personStatus) {
+    pendingPersonForms.add(form);
+    form.setAttribute("aria-busy", "true");
+    button.setAttribute("aria-busy", "true");
+    personStatus.classList.remove("save-error");
+    personStatus.textContent = "Saving...";
+  }
   paintReplyStatus();
   try {
     if (form.id === "login-form") {
@@ -1362,19 +1388,39 @@ document.addEventListener("submit", async (e) => {
           for (const key of Object.keys(body)) formState.unconfirmed.add(key);
           await updateContact(form.dataset.id, body, { paint: false });
         } else await refresh(false);
-      } else if (demo) {
-        data.contacts.push(normalizeContact(body));
-        persistDemo();
-      } else data.contacts.push(await request("/api/contacts", "POST", body));
-      closeOverlay();
+      } else {
+        const created = demo
+          ? normalizeContact(body)
+          : await request("/api/contacts", "POST", body);
+        // A background refresh may already contain this creation and newer edits.
+        if (!data.contacts.some((contact) => contact.id === created.id))
+          data.contacts.push(created);
+        if (demo) persistDemo();
+        // Continued typing after creation must update this person, not create another.
+        form.dataset.id = created.id;
+      }
+      formState.initial = current;
+      formState.unconfirmed.clear();
+      const hasNewerChanges =
+        form.isConnected &&
+        Object.keys(
+          changedPersonFields(current, personFormValues(new FormData(form))),
+        ).length > 0;
+      if (form.isConnected) {
+        if (hasNewerChanges)
+          personStatus.textContent =
+            "Saved. Your newer changes still need saving.";
+        else closeOverlay();
+      }
       render();
-      notify(
-        editing
-          ? Object.keys(body).length
-            ? "Relationship updated."
-            : "No changes to save."
-          : "One more person in your corner.",
-      );
+      if (!hasNewerChanges)
+        notify(
+          editing
+            ? Object.keys(body).length
+              ? "Relationship updated."
+              : "No changes to save."
+            : "One more person in your corner.",
+        );
     }
     if (form.id === "circle-form") {
       const old = data.circles.find((g) => g.id === form.dataset.id),
@@ -1451,8 +1497,18 @@ document.addEventListener("submit", async (e) => {
     }
   } catch (error) {
     if (replyJob) replyBuffer.finish(replyJob, false);
+    if (personStatus && form.isConnected) {
+      personStatus.textContent =
+        "Save not confirmed. Your changes are still here.";
+      personStatus.classList.add("save-error");
+    }
     notify(error.message, true);
   } finally {
+    pendingPersonForms.delete(form);
+    if (personStatus) {
+      form.setAttribute("aria-busy", "false");
+      button.setAttribute("aria-busy", "false");
+    }
     if (button?.isConnected) button.disabled = false;
     paintReplyStatus();
   }

@@ -172,3 +172,17 @@ The fix preserves unsubmitted fields during server PATCH writes. It does not pro
 - [ ] Same-field merge or pending-form/shutdown recovery implemented.
 
 This extends submitted-field safety to the relationship editor. No real data, paid services, or outbound actions were used.
+
+## Person Save Lifecycle Checks - October 12, 2026
+
+- [x] Slow confirmation discarding newer form typing reproduced before the fix.
+- [x] Actual Save button and duplicate submit events guarded during pending saves.
+- [x] Initial focused and complete Chromium suites pass.
+- [x] Reviewed post-commit refresh duplication reproduced before ID-presence repair.
+- [x] Final production build and 74 unit/integration tests pass.
+- [x] Final focused timing/failure/creation checks and desktop/mobile status review pass.
+- [x] Independent final re-review complete with no further high-confidence finding.
+- [x] Complete Chromium suite passes on final build.
+- [ ] Circle lifecycle parity, person-form crash recovery, or idempotent creation retries implemented.
+
+Pending-save protection does not persist unsaved form values across closing, reload, or shutdown. Private data and external integrations are unchanged; native Site/GitHub results establish publication separately.
