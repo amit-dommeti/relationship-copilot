@@ -80,6 +80,12 @@ Evidence: controlled local browser timing tests, including before/after failures
 
 Evidence: before/after browser regression, local rollback and boundary tests, a synthetic 10,000-member transaction, and independent review of the draft-version interaction. Scope limits remain explicit: no hosted load test, real-user impact measurement, general conflict resolution, or idempotent creation retry after a lost acknowledgement.
 
+## Reliability Iteration: Follow-Through Must Keep Its Context
+
+"I reproduced a reminder save overwriting the next time I entered. I tied the operation to the clicked person and time, then made its confirmation update only those controls. I tested switching people while draft saving was still pending, because disabling one button doesn't preserve the intent of a delayed action. I also kept calendar download independent of saves: reading a reminder should not require a working save service."
+
+Evidence: controlled before/after Chromium checks, failure/retry tests, demo storage failures, and desktop/mobile status review. This is a narrow application timing improvement, not measured follow-through, notification delivery, real-time LinkedIn access, or crash recovery.
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

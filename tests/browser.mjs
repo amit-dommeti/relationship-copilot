@@ -14,6 +14,7 @@ import { checkDemoImport } from "./demo-import-browser.mjs";
 import { checkContactPatches } from "./contact-patch-browser.mjs";
 import { checkPersonFormSafety } from "./person-form-browser.mjs";
 import { checkPersonSaveLifecycle } from "./person-save-browser.mjs";
+import { checkReminderSafety } from "./reminder-browser.mjs";
 import {
   checkCircleSave,
   checkCircleDraftTiming,
@@ -346,6 +347,7 @@ try {
   await checkContactPatches(page, base);
   await checkPersonFormSafety(page, base);
   await checkPersonSaveLifecycle(page, base);
+  await checkReminderSafety(page, base);
   await checkCircleSave(page, base);
   await checkCircleDraftTiming(page, base);
   await checkDemoImport(page, base);

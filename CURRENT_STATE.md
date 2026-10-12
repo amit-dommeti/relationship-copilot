@@ -12,20 +12,21 @@ Updated October 12, 2026. Scope: Relationship Copilot only.
 
 ## Latest Verified Change
 
-Circle details and changed memberships now save in one transaction instead of a metadata request followed by separate contact requests. The shared plan validates membership; writes add/remove only the current circle in stored arrays. The editor preserves untouched checkbox intent, retains failed-save selections, locks controls while pending, and leaves replacement forms alone. Confirmed creation retains its ID before refresh so a refresh failure cannot create another circle on retry. Demo storage is the commit point before replacing either in-memory collection.
+Reminder Set/Clear captures its person and submitted time before awaiting draft autosave. One pending operation per person survives drawer reopening. Confirmation updates only the matching reminder controls, without redrawing the drawer or replacing newer time, reply text, focus, or a different editor. Inline saving/error feedback supports retries. Calendar download uses the currently displayed person and time immediately, independently of draft saving.
 
 Evidence collected:
 
-- Browser reproduced a failed membership request leaving a half-created circle before the fix.
-- Ten focused unit/integration tests pass: full rollback, validation/ownership, unrelated circle/field preservation, capacity races, demo nonmutation, unconfirmed reversions, and 10,000 members in one two-statement batch.
-- Initial focused and full Chromium suites passed, including circle retry/timing/demo storage and all preceding import/draft/reply/person checks.
-- Independent review found a draft-version acknowledgement interaction. Membership-only writes now preserve draft text and token together; ordinary contact PATCH rotation is unchanged. The follow-through test and independent re-review pass. The final production build, all 84 automated tests, expanded focused Chromium checks, and full desktop/tablet/mobile suite pass, including delayed refresh followed by membership change and the next recorded send. Desktop/mobile status captures were inspected; existing portfolio layouts remain representative. Publication is confirmed separately by native Site success and the GitHub head.
-- Existing circle API accepts optional membership deltas with bounded payloads; old metadata-only calls remain compatible. Applied migrations, Site identity, private audience, AI settings, and external integrations are unchanged. Tests use synthetic data only.
+- Browser reproduced a delayed reminder save replacing a newer entered time with the older submitted time before the fix.
+- Production build and all 84 unit/integration tests pass. Expanded focused Chromium checks pass for slow Set/Clear, new time and reply cursor preservation, duplicate/reopen locks, failure/retry, unload/workspace guards, unrelated editors, pre-autosave identity, calendar download, and past-time validation.
+- Demo reminder saves write storage before replacing in-memory state. Injected storage failures preserve both states; retry and reload persistence pass with no private-workspace writes.
+- Desktop/mobile status captures were inspected. Existing portfolio screenshots remain representative. Independent read-only review found no actionable issue in the scoped diff; nine isolated function checks passed. The complete Chromium suite passes on the final build, including six desktop/tablet/mobile routes and the preceding import/draft/reply/person/circle protections. Publication is confirmed separately by native Site success and the GitHub head.
+- No server contract, applied migration, Site identity, audience, AI setting, or external integration changes. Tests use synthetic data only.
 
-Pending person and circle saves warn before unloading and block workspace switches/import confirmation until settled. Unsaved forms remain tab-memory only, and explicitly closing them still discards unsaved values. This is not form autosave, general conflict resolution, or crash recovery. Older open bundles still save circle membership with separate requests until reloaded.
+Pending person, circle, and reminder saves warn before unloading and block workspace switches/import confirmation until settled. Unsaved forms remain tab-memory only, and explicitly closing them still discards unsaved values. This is not form autosave, general conflict resolution, or crash recovery. Older open bundles retain their previous behavior until reloaded.
 
 ## Earlier Protections
 
+- Circle details and changed memberships commit together, with untouched checkbox intent and unrelated circles preserved. Failure retains selections; demo persistence precedes in-memory replacement. Membership-only writes preserve draft text and version together. Confirmed creation retains its identity before refresh.
 - Person saves preserve newer typing, focus, and selection; confirmations advance only their submitted baseline. Repeat submissions are blocked and delayed completions leave other forms alone. Continued creation updates the confirmed identity and avoids duplicate insertion after refresh.
 - Relationship forms submit only changed fields plus unconfirmed retry intent, preserving newer untouched metadata and exact timestamps. Custom check-in rhythms remain selectable. Intentional clears and lost-acknowledgement reverts persist.
 - Server PATCH merges only submitted normalized fields into current storage. The optional timestamp guard runs at the write; deleted contacts cannot be recreated by a delayed PATCH. Atomic write acknowledgements keep an older send from receiving another writer's newer draft token.
@@ -39,15 +40,15 @@ Pending person and circle saves warn before unloading and block workspace switch
 - App: https://relationship-copilot-amit.plumlyric7.chatgpt.site
 - Public source: https://github.com/amit-dommeti/relationship-copilot
 - Existing identity is tracked in `.openai/hosting.json`; never replace it or broaden access without approval.
-- Prior confirmed release: person-save lifecycle, Site source `025ed30285697f9d38e999bc796a2f39d159252e`, GitHub `05c913fa0d2f18db8d4f21d26525c1b3c96b70d6`, identical source tree `a731e0e4a8da3616eb2544040423b3209610a178`. This file records the atomic-circle follow-up, not its own publication receipt.
+- Prior confirmed release: atomic-circle saves, Site source `7066ab92c3ef099ec157b64d63f04f33ba62a9b6`, GitHub `92d1e7cf59fccef0c230b8e832778b99c6fdafe5`, identical source tree `3cd43f49542800626cb487c5c7f8f55c94992bbe`. This file records the reminder follow-up, not its own publication receipt.
 - Open/synchronize and package via the Sites source helper. Use connected GitHub write tools if local push credentials are unavailable. Never put credentials, contact exports, or private data in GitHub.
 
 ## Limits And Next Useful Checks
 
 - Same-field editing, imports racing with edits, and arbitrary out-of-order UI responses are not general conflict-resolved. The optional timestamp guard is not a unique revision and is not currently supplied by forms.
 - Unsaved drafts/replies/forms can be lost on forced shutdown. Unload warnings are not guaranteed by every mobile lifecycle. Retry identities do not survive reloads or devices.
-- Demo storage is browser-local, subject to eviction, and not cross-tab conflict-safe. Import and circle saves use storage-before-state; other demo actions retain their existing best-effort behavior.
+- Demo storage is browser-local, subject to eviction, and not cross-tab conflict-safe. Import, circle, and reminder saves use storage-before-state; other demo actions retain their existing best-effort behavior.
 - Chromium checked; other engines, full screen-reader audit, and production D1 load/fault tests remain unverified. Local import tests cover 10,000 contacts, one transactional batch, bounded query count, and injected rollback.
 - Preserve browser failure diagnostics. Earlier intermittent toast/autosave timeouts were not reproduced in the previous final passes, but their root cause remains unknown.
-- Reminder/preference form lifecycles remain separate; investigate delayed completion before claiming parity. Person/circle creation with a lost acknowledgement can still duplicate on retry; unlike message recording, creation has no retained idempotency key. Circle metadata edits remain last-write-wins.
+- Preference and other action lifecycles remain separate. Reminder entry is not buffered across explicit tab changes, closing, or another action's redraw; failures after reopening ask the user to review the displayed time. Person/circle creation with a lost acknowledgement can still duplicate on retry; unlike message recording, creation has no retained idempotency key. Same-field edits remain last-write-wins.
 - Real-user import and live AI preference/latency evaluation require authorization. No adoption, retention, writing-quality uplift, or production incident reduction is claimed.

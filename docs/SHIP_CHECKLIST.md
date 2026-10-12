@@ -201,3 +201,18 @@ Pending-save protection does not persist unsaved form values across closing, rel
 - [ ] Lost-acknowledgement creation identity, metadata conflict resolution, and hosted D1 fault/load testing implemented.
 
 The all-or-nothing guarantee covers a circle save in the updated app. It does not turn imports, older open browser bundles, or arbitrary multi-device edits into one operation.
+
+## Reminder Lifecycle Checks - October 12, 2026
+
+- [x] Delayed reminder save overwriting a newer time reproduced before the fix.
+- [x] Production build and all 84 unit/integration tests pass.
+- [x] Focused Chromium Set/Clear timing, duplicate/reopen locks, failure/retry, and unrelated-editor checks pass.
+- [x] Newer reminder time and unsaved reply focus/selection survive acknowledgement.
+- [x] Pending unload/workspace guards, pre-autosave person/time capture, and calendar contents checked.
+- [x] Demo storage failure preserves memory/storage, with successful retry/reload and no private write.
+- [x] Desktop/mobile status screenshots visually inspected.
+- [x] Independent read-only review completed with no actionable finding; nine isolated function checks passed.
+- [x] Full Chromium suite passes on final build.
+- [ ] Durable reminder-entry recovery, general response ordering, or other-engine/assistive-technology audit implemented.
+
+Pending reminder protection does not retain unsaved time across explicit closing or another action's redraw. Native Site/GitHub results establish publication separately.

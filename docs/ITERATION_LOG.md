@@ -2,6 +2,16 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Keep The Reminder You Are Editing - October 12, 2026
+
+- Reproduced a delayed reminder save replacing the next time entered with its older submitted time. Set/Clear now capture the person and time before awaiting autosave, share a per-person pending lock, and acknowledge only the matching reminder controls without redrawing the drawer.
+- Newer time, reply text/cursor, and unrelated editors survive reminder completion. Persistent saving/error feedback and retry remain in the form. Pending operations participate in unload warnings, block workspace/import changes, and remain locked when reopened. Calendar download is independent of draft saving, avoiding a mixed person/time after a delayed wait.
+- Demo storage is now the reminder commit point; failed writes leave stored and in-memory reminder values unchanged. No private write occurs in demo mode.
+- Production build, all 84 unit/integration tests, and expanded focused Chromium checks pass. Tests cover delayed Set/Clear, newer time and reply focus, duplicate/reopen locking, rejected saves and retry, workspace/unload guards, unrelated forms, switching people before autosave finishes, calendar contents, invalid dates, and demo storage failure/retry/reload. The first demo test assumed seed data was already persisted; corrected fixture initialization without weakening assertions.
+- Desktop/mobile status captures inspected; existing portfolio screenshots remain representative. Independent read-only review found no actionable issue in the scoped diff; nine isolated function checks passed. The complete Chromium suite passes on the final build, including six desktop/tablet/mobile routes, the new reminder checks, and preceding import/draft/reply/person/circle protections.
+- No private data, real AI evaluation, external account access, paid services, server contract, applied migration, or sharing changes. Explicitly closing/changing tabs can still discard unsaved reminder input; this is not general conflict resolution or crash recovery. Other actions' redraws and old open bundles retain their existing limits. No user-outcome improvement is claimed.
+- Publication is established separately by native Site success and the GitHub head.
+
 ## Save The Whole Shared Circle - October 12, 2026
 
 - Reproduced a failed member request leaving a half-created circle: the browser still found the new circle even though its selected person was not added. The editor previously saved metadata and then one contact at a time.

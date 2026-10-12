@@ -48,6 +48,8 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Save the whole circle:** shared context and selected membership changes now save together or roll back together. A failed save keeps your selections for retry. Changes to one circle leave other memberships intact; untouched checkboxes preserve newer updates. The demo also keeps its previous state if browser storage fails. [Behavior and limits](docs/ARCHITECTURE.md#atomic-circle-saves).
 
+**Follow through without losing your place:** slow reminder saves preserve a newer time and leave your reply or other open editor alone. Saving and retry feedback stays beside the time field. Calendar downloads work even while a draft is saving. [Behavior and limits](docs/ARCHITECTURE.md#reminder-save-lifecycle).
+
 ## Try It Locally
 
 Requires Node.js 22.13+ (Node 24 LTS recommended).

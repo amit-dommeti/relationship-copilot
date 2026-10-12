@@ -1424,7 +1424,8 @@ input[type="checkbox"] {
 .form-stack .save-error {
   color: #ffc8ad;
 }
-#retry-draft[hidden] {
+#retry-draft[hidden],
+#reminder-form [hidden] {
   display: none;
 }
 .notice {

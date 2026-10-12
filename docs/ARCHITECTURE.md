@@ -100,7 +100,7 @@ Comparing the actual displayed controls preserves a last-contact timestamp's tim
 
 Person saves capture submitted values and lock the actual submit button, with a pending-form set blocking repeated submit events. Acknowledgement advances that form's baseline to the submitted snapshot and clears its unconfirmed-field set. If current controls differ, the same editor stays open with its focus and selection intact and an inline reminder to save newer changes. A completion only closes its own still-connected, unchanged form, never a replacement editor. Successful creation attaches the returned ID so continued typing becomes an update; insertion skips an ID already loaded by background refresh, preserving that newer entry.
 
-Pending person saves participate in unload warnings and block private/demo changes and confirmed imports until settled, including after closing the form. This is not an unsaved-form buffer: Cancel/Escape still discards unsaved form values, and warnings do not protect unsaved forms after requests finish or guarantee recovery on forced shutdown. Lost creation acknowledgements can still produce duplicates on retry because creation has no retained idempotency key. Circle saves have their separate protections below; reminder/preference lifecycles and arbitrary response ordering remain outside these guarantees.
+Pending person saves participate in unload warnings and block private/demo changes and confirmed imports until settled, including after closing the form. This is not an unsaved-form buffer: Cancel/Escape still discards unsaved form values, and warnings do not protect unsaved forms after requests finish or guarantee recovery on forced shutdown. Lost creation acknowledgements can still produce duplicates on retry because creation has no retained idempotency key. Circle and reminder saves have their separate protections below; preference lifecycles and arbitrary response ordering remain outside these guarantees.
 
 ## Atomic Circle Saves
 
@@ -111,6 +111,14 @@ Circle POST/PUT accepts optional `membership: { add: [], remove: [] }`; older me
 The editor computes membership deltas from its opening checkboxes, including unconfirmed intent on retry. Untouched checkboxes cannot reverse newer membership changes. During a save, circle controls are disabled, repeat submissions are ignored, and workspace switches/import confirmation wait for completion. An unload warning includes pending circle saves; completion closes only the original form. After confirmed creation, the returned ID is retained before refreshing, so a failed refresh retries an update rather than creating another circle.
 
 Demo saves use the shared plan and write the complete next browser-storage value before replacing in-memory state. A storage failure leaves both collections unchanged. All these checks use synthetic local data; no production D1 fault or load test was performed. Lost creation acknowledgements can still duplicate a circle on retry, and simultaneous metadata edits remain last-write-wins. Unsaved forms are not durable across closing or shutdown. Older open browser bundles still use separate requests until reloaded.
+
+## Reminder Save Lifecycle
+
+Set/Clear uses the reminder form's contact ID and current time captured before awaiting draft saves. A per-person pending map blocks duplicate writes and conflicts between Set/Clear, including when the drawer is reopened. Pending jobs warn before unload and block workspace changes/import confirmation. Clearing the reply queue also waits for that person's pending reminder. Calendar download is a synchronous read of the selected person/time, not dependent on the draft save service.
+
+Acknowledgement updates the saved-time baseline and Clear control only in the matching current reminder form. The input changes only if it still matches the submitted value (or the saved opening value for a reopened form). Newer typing, reply focus, and unrelated editors are not redrawn. Failures retain input; a reopened form explicitly asks the user to review its time before retrying. Demo writes persist the complete next state before replacing memory, without private API writes or changes to unrelated fields/draft tokens.
+
+This is pending-operation safety, not reminder-entry autosave. Explicit closing, tab changes, and redraws from other actions can still discard an unsaved time. No general ordering guarantee is added for same-field writes from other tabs/devices or older refreshes. Calendar alerts require the user to add the downloaded file to their calendar; browser notifications require the app to remain open.
 
 ## Known Boundaries
 

@@ -161,6 +161,7 @@ const personForms = new WeakMap();
 const pendingPersonForms = new Set();
 const circleForms = new WeakMap();
 const pendingCircleForms = new Set();
+const reminderJobs = new Map();
 let draftWriteSerial = 0;
 const workspace = () => (demo ? "demo" : "private");
 const draftSaver = createDraftSaver(
@@ -223,7 +224,8 @@ window.addEventListener("beforeunload", (event) => {
     !messageRecorder.hasPending() &&
     !sentDrafts.size &&
     !pendingPersonForms.size &&
-    !pendingCircleForms.size
+    !pendingCircleForms.size &&
+    !reminderJobs.size
   )
     return;
   event.preventDefault();
@@ -247,6 +249,99 @@ function paintReplyStatus() {
           ? "Not saved. Keep this tab open."
           : "";
   label.classList.toggle("save-error", status === "error");
+}
+function paintReminderStatus() {
+  const form = $("#reminder-form");
+  if (!form) return;
+  const job = reminderJobs.get(form.dataset.contactId);
+  const busy = Boolean(job);
+  form.setAttribute("aria-busy", String(busy));
+  for (const action of ["submit-reminder", "clear-reminder"]) {
+    const button = form.querySelector(`[data-action="${action}"]`);
+    button.disabled = busy;
+    button.setAttribute("aria-busy", String(busy));
+  }
+  form.querySelector('[data-action="clear-reminder"]').hidden =
+    !form.dataset.savedValue;
+  if (busy) {
+    const status = form.querySelector('[role="status"]');
+    status.textContent = job.clear
+      ? "Clearing reminder..."
+      : "Saving reminder...";
+    status.classList.remove("save-error");
+  }
+}
+async function saveReminder(form, clear = false) {
+  if (!form?.isConnected) return;
+  const id = form.dataset.contactId;
+  if (reminderJobs.has(id)) return;
+  const person = data.contacts.find((contact) => contact.id === id);
+  if (!person) return;
+  const value = form.elements.reminderAt.value;
+  const job = { form, value, clear };
+  reminderJobs.set(id, job);
+  paintReminderStatus();
+  try {
+    if (!clear && dateValue(value) <= Date.now())
+      throw new Error("Choose a time in the future.");
+    const reminderAt = clear ? "" : new Date(value).toISOString();
+    await flushDraft();
+    if (demo) {
+      const next = {
+        ...data,
+        contacts: data.contacts.map((c) =>
+          c.id === id ? { ...c, reminderAt } : c,
+        ),
+      };
+      // A failed browser-storage write must not look like a saved reminder.
+      localStorage.setItem("rc-demo-v2", JSON.stringify(next));
+      data = next;
+    } else {
+      const saved = await updateContact(id, { reminderAt }, { paint: false });
+      if (!saved)
+        throw new Error(
+          "This person is no longer available. Reopen your people.",
+        );
+    }
+    const current = $("#reminder-form");
+    if (current?.dataset.contactId === id) {
+      const field = current.elements.reminderAt;
+      const untouched =
+        field.value === (current === form ? value : current.dataset.savedValue);
+      if (untouched) field.value = localDate(reminderAt);
+      current.dataset.savedValue = localDate(reminderAt);
+      const status = current.querySelector('[role="status"]');
+      status.textContent =
+        field.value !== current.dataset.savedValue
+          ? "Saved. Your newer time still needs saving."
+          : clear
+            ? "Reminder cleared."
+            : "Reminder saved.";
+      status.classList.remove("save-error");
+    }
+    render();
+    notify(
+      current?.dataset.contactId === id
+        ? clear
+          ? "Reminder cleared."
+          : "Reminder set. Add it to your calendar for alerts while the app is closed."
+        : `Reminder ${clear ? "cleared" : "saved"} for ${person.name}.`,
+    );
+  } catch (error) {
+    const current = $("#reminder-form");
+    if (current?.dataset.contactId === id) {
+      const status = current.querySelector('[role="status"]');
+      status.textContent = `Save not confirmed. ${error.message} ${current === form ? "Your time is still here." : "Review the time before retrying."}`;
+      status.classList.add("save-error");
+    } else
+      notify(
+        `Reminder for ${person.name} not confirmed. ${error.message}`,
+        true,
+      );
+  } finally {
+    reminderJobs.delete(id);
+    paintReminderStatus();
+  }
 }
 const initials = (name) =>
   name
@@ -705,6 +800,31 @@ function drawDetail(first = false) {
   paintDraftStatus();
   paintDraftGeneration();
   paintSentStatus();
+  const reminderForm = $("#reminder-form");
+  if (reminderForm) {
+    reminderForm.dataset.contactId = c.id;
+    reminderForm.dataset.savedValue = localDate(c.reminderAt);
+    if (!reminderForm.querySelector('[data-action="clear-reminder"]')) {
+      reminderForm
+        .querySelector(".detail-actions")
+        .insertAdjacentHTML(
+          "beforeend",
+          btn("Clear", "clear-reminder", "x", "quiet"),
+        );
+      icons();
+    }
+    const status = document.createElement("p");
+    status.id = "reminder-save-status";
+    status.className = "small-caption";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    reminderForm.append(status);
+    reminderForm.elements.reminderAt.setAttribute(
+      "aria-describedby",
+      status.id,
+    );
+    paintReminderStatus();
+  }
   const replyForm = $("#reply-form");
   if (replyForm) {
     replyForm.dataset.contactId = c.id;
@@ -898,6 +1018,15 @@ document.addEventListener("keydown", (e) => {
   }
 });
 document.addEventListener("input", (e) => {
+  const reminderForm = e.target.closest("#reminder-form");
+  if (reminderForm && !reminderJobs.has(reminderForm.dataset.contactId)) {
+    const status = reminderForm.querySelector('[role="status"]');
+    status.textContent =
+      reminderForm.elements.reminderAt.value !== reminderForm.dataset.savedValue
+        ? "This time hasn't been saved."
+        : "";
+    status.classList.remove("save-error");
+  }
   const replyForm = e.target.closest("#reply-form");
   if (replyForm) {
     replyBuffer.stage(workspace(), replyForm.dataset.contactId, {
@@ -987,6 +1116,12 @@ document.addEventListener("click", async (e) => {
   const c = selectedContact();
   e.preventDefault();
   if (target.disabled) return;
+  if (["submit-reminder", "clear-reminder"].includes(action)) {
+    const form = target.closest("#reminder-form");
+    if (action === "submit-reminder") form?.requestSubmit();
+    else await saveReminder(form, true);
+    return;
+  }
   if (action === "mark-sent" && sentDrafts.has(c?.id)) return;
   // Capture before awaiting autosave; the drawer and its text can change meanwhile.
   const sentDraft =
@@ -1006,6 +1141,14 @@ document.addEventListener("click", async (e) => {
   if (action === "draft" && !draftJob) return;
   target.disabled = true;
   try {
+    if (
+      (["demo", "exit-demo", "confirm-import"].includes(action) &&
+        reminderJobs.size) ||
+      (action === "resolve" && reminderJobs.has(c?.id))
+    )
+      throw new Error(
+        "Wait for your reminder to finish saving before continuing.",
+      );
     if (
       ["demo", "exit-demo", "confirm-import"].includes(action) &&
       pendingCircleForms.size
@@ -1042,6 +1185,7 @@ document.addEventListener("click", async (e) => {
     // Reading and copying must not depend on the save service being available.
     const readOnly = [
       "copy",
+      "calendar",
       "close",
       "person",
       "conversation",
@@ -1298,10 +1442,6 @@ document.addEventListener("click", async (e) => {
       await updateContact(c.id, { needsReply: false, reminderAt: "" });
       drawDetail();
       notify("Conversation cleared from your reply queue.");
-    } else if (action === "clear-reminder") {
-      await updateContact(c.id, { reminderAt: "" });
-      drawDetail();
-      notify("Reminder cleared.");
     } else if (action === "calendar") {
       const when =
         overlay.querySelector('[name="reminderAt"]')?.value || c.reminderAt;
@@ -1309,9 +1449,8 @@ document.addEventListener("click", async (e) => {
       notify("Open the calendar file to add your reminder.");
     } else if (action === "submit-reply") {
       if (replyFormToSubmit?.isConnected) replyFormToSubmit.requestSubmit();
-    } else if (action === "submit-reminder")
-      $("#reminder-form").requestSubmit();
-    else if (action === "submit-settings") $("#settings-form").requestSubmit();
+    } else if (action === "submit-settings")
+      $("#settings-form").requestSubmit();
     else if (action === "linkedin-help") linkedInHelp();
     else if (action === "agent-brief") {
       await navigator.clipboard.writeText(
@@ -1360,6 +1499,10 @@ document.addEventListener("submit", async (e) => {
   )
     return;
   e.preventDefault();
+  if (form.id === "reminder-form") {
+    await saveReminder(form);
+    return;
+  }
   if (pendingPersonForms.has(form) || pendingCircleForms.has(form)) return;
   const f = new FormData(form),
     values = Object.fromEntries(f.entries());
@@ -1529,17 +1672,6 @@ document.addEventListener("submit", async (e) => {
         values.direction === "in"
           ? "Reply saved. It's in your reply queue."
           : "Message saved.",
-      );
-    }
-    if (form.id === "reminder-form") {
-      if (dateValue(values.reminderAt) <= Date.now())
-        throw new Error("Choose a time in the future.");
-      await updateContact(selected, {
-        reminderAt: new Date(values.reminderAt).toISOString(),
-      });
-      drawDetail();
-      notify(
-        "Reminder set. Add it to your calendar for alerts while the app is closed.",
       );
     }
     if (form.id === "settings-form") {
