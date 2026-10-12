@@ -9,6 +9,28 @@ import {
 import { validateImport, importError } from "../shared/import-validation.js";
 import { prepareWorkspaceImport } from "../shared/import-plan.js";
 
+const contactFields = [
+  "name",
+  "company",
+  "role",
+  "url",
+  "email",
+  "relationship",
+  "circleIds",
+  "memory",
+  "reason",
+  "cadence",
+  "lastContactAt",
+  "connectedAt",
+  "snoozedUntil",
+  "reminderAt",
+  "needsReply",
+  "archived",
+  "favorite",
+  "draft",
+  "latestMessageAt",
+];
+
 function jsonChunks(records) {
   const chunks = [];
   let rows = [],
@@ -66,6 +88,56 @@ export class Store {
     const c = { ...normalizeContact(raw), draftVersion: uid() };
     await this.contactStatement(owner, c).run();
     return c;
+  }
+  async patchContact(owner, contact, raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw))
+      throw Object.assign(new Error("Send the contact fields to update."), {
+        status: 400,
+      });
+    const expected = raw.expectedUpdatedAt;
+    if (
+      expected !== undefined &&
+      (typeof expected !== "string" || !expected || expected.length > 50)
+    )
+      throw Object.assign(
+        new Error("The contact version is invalid. Reload before saving."),
+        { status: 400 },
+      );
+    const fields = contactFields.filter((key) => Object.hasOwn(raw, key));
+    let normalized;
+    try {
+      normalized = normalizeContact({
+        name: contact.name,
+        ...Object.fromEntries(fields.map((key) => [key, raw[key]])),
+      });
+    } catch (error) {
+      throw Object.assign(error, { status: 400 });
+    }
+    const changes = {
+      ...Object.fromEntries(fields.map((key) => [key, normalized[key]])),
+      draftVersion: uid(),
+      updatedAt: normalized.updatedAt,
+    };
+    // Merge at the write, not into the earlier read: unrelated edits and new
+    // message state must survive. A deleted contact must never be recreated.
+    // RETURNING acknowledges this write's token, never a later writer's token.
+    const row = await this.stmt(
+      `UPDATE contacts SET data=json_patch(data,?),updated_at=? WHERE owner=? AND id=?${expected === undefined ? "" : " AND json_extract(data,'$.updatedAt')=?"} RETURNING data`,
+      JSON.stringify(changes),
+      changes.updatedAt,
+      owner,
+      contact.id,
+      ...(expected === undefined ? [] : [expected]),
+    ).first();
+    if (row) return JSON.parse(row.data);
+    if (!(await this.contact(owner, contact.id)))
+      throw Object.assign(new Error("Contact not found."), { status: 404 });
+    throw Object.assign(
+      new Error(
+        "This contact changed in another window. Reload before saving.",
+      ),
+      { status: 409 },
+    );
   }
   async saveCircle(owner, raw) {
     const c = normalizeCircle(raw);

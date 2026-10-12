@@ -1,6 +1,6 @@
 # Current State
 
-Updated October 11, 2026. Scope: Relationship Copilot only.
+Updated October 12, 2026. Scope: Relationship Copilot only.
 
 ## Product And Boundaries
 
@@ -11,6 +11,17 @@ Updated October 11, 2026. Scope: Relationship Copilot only.
 - Optional AI drafting is implemented but not live-evaluated. No-key mode is explicitly a local starter. No model/key changes in the recovery iteration.
 
 ## Latest Verified Change
+
+Contact PATCH saves now merge only explicitly submitted normalized fields into the current stored contact. Reproduced two successful overlapping requests that lost new relationship notes; controlled regressions also exposed a newly recorded reply being undone, a stale guard being checked too early, and a deleted contact being recreated. These now pass. Identity, creation time, and provenance remain protected, and draft tokens still rotate on ordinary saves.
+
+- `npm test`: 69 passed, including nine new PATCH/storage tests. Coverage includes overlapping reads, intervening message/deletion, explicit clearing/false/arrays, ownership, protected fields, invalid payloads, write-time guards, atomic acknowledgement, and failed-write preservation.
+- Independent review caught an initial read-back race: a write could acknowledge another writer's newer identical-text draft token. The new failing-before/fixed-after regression verifies `UPDATE ... RETURNING` acknowledges only its own snapshot, so an older send cannot clear that newer draft.
+- Final production build, focused two-window notes/reminder/draft/favorite checks, and the complete Chromium suite passed after the reviewed acknowledgement fix. The full run covers desktop/tablet/mobile, drafts, import/restore, reply recovery, message retries, demo isolation, and persistence. Publication is not established by this file; consult the native Site result and GitHub head.
+- No schema, visible layout, AI configuration, Site audience, or external integration changes. No real contacts or paid/model calls used.
+
+Boundary: simultaneous edits to the same submitted field remain last-write-wins unless the caller supplies a matching timestamp guard. Current forms do not supply it, and timestamps are not unique revisions. Unchanged fields explicitly submitted by a form still count as writes. Imports, arbitrary out-of-order UI responses, and demo cross-tab storage conflicts are not solved by this change.
+
+## Previous Verified Change
 
 The conditional-clear change below now passes the release checks, including two consecutive full browser runs on the final implementation. Publication is established by the native Site deployment result and GitHub head, not this file alone.
 
@@ -36,7 +47,7 @@ Prior import safety remains in place: full validation, one transactional batch f
 - Existing Site identity is tracked in `.openai/hosting.json`; never replace it or broaden access without approval.
 - App: https://relationship-copilot-amit.plumlyric7.chatgpt.site
 - Public source: https://github.com/amit-dommeti/relationship-copilot
-- The prior confirmed release is the October 11 demo-restore fix: Site source `dba01d24b48fcdfd232087aba9d271347107d533`, GitHub `97a289abd5115372bea682b35f6a5fb4af7ac42c`, identical source trees. This file records the verified conditional-clear change; consult the native deployment result and GitHub head for its exact publication provenance.
+- The prior confirmed release is the October 11 conditional draft-clear fix: Site source `49e20576c690122021d6f9bab03fcbc85e31577e`, GitHub `c1186a85e3b36feedf132ac25598f4850ec44bff`, identical source tree `2df9cc73494246d6f7fa38743b2a618a5dc9f3ed`. This file records the contact PATCH follow-up; consult the native deployment result and GitHub head for its exact publication provenance.
 - Use the Sites source helper to open/synchronize before edits and package the exact pushed source. Use connected GitHub write tools if local GitHub push credentials remain unavailable. Never store credentials or private contacts in the repository.
 
 ## Limits And Next Useful Checks
@@ -44,10 +55,10 @@ Prior import safety remains in place: full validation, one transactional batch f
 - Unsaved drafts and Conversation entries live in tab memory. Forced shutdown can lose them; unload warnings are not guaranteed on every mobile lifecycle event. Replies require explicit saving. Other unsaved forms, including reminder inputs, do not yet have equivalent buffers.
 - Chromium checked; other engines and a full screen-reader audit remain unverified.
 - Stale suggestions are discarded rather than merged. Invalidation does not guarantee cancellation of provider work or charges. A same-contact job remains pending until its request finishes or times out.
-- The delayed-message check includes a separate simulated client's completed draft save. General simultaneous contact PATCH/import conflict resolution across devices remains unimplemented and unverified.
+- Unrelated contact fields are protected by submitted-field PATCH writes. Same-field editing, full-record imports racing with edits, and general cross-device conflict UI remain outside that guarantee.
 - Import rollback and size checks ran against local SQLite, not a hosted D1 load/fault-injection environment. The prepared batch is limited to 45 writes plus two reads. The request body is capped at 8 MiB; collections are capped at 10,000 contacts, 500 circles, and 10,000 messages, with rejection rather than silent truncation.
 - Demo restore merges rather than replacing existing data. Demo persistence remains browser-local and can be cleared or evicted. The strict storage-before-state guarantee applies to imports; other demo edits retain their existing best-effort save behavior. Cross-tab storage conflicts are not resolved.
 - Retry identities survive failure and reopening within the same tab, not a reload or another device. Changing a failed entry starts a distinct recording. Review saved history before recording again after losing the tab; no universal exactly-once guarantee is claimed.
 - Server-side conditional clearing protects newer saved drafts without browser cleanup. Unsaved text still needs its own successful save. Already-open older browser bundles may retain the old cleanup behavior; reload after publication. Hosted D1 fault testing and forced OS/browser shutdown were not performed.
-- Retain browser failure diagnostics if the unexplained timeouts recur; do not weaken checks to make them pass. A separate useful safety investigation is stale contact PATCH writes that can overwrite unrelated newer contact fields; general multi-device conflict handling is not part of this change.
+- Retain browser failure diagnostics if the unexplained timeouts recur; do not weaken checks to make them pass. A future investigation can examine forms submitting unchanged fields or import/edit overlaps; general multi-device conflict handling is not part of this change.
 - Real-user import and live AI preference/latency evaluation still require authorization. No adoption, retention, or writing-quality uplift is claimed.

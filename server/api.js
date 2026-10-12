@@ -118,24 +118,7 @@ export async function api(request, env, identity) {
       if (!c) return json({ error: "Contact not found." }, 404);
       if (!action && method === "PATCH") {
         const body = await readJSON(request, 20000);
-        if (body.expectedUpdatedAt && body.expectedUpdatedAt !== c.updatedAt)
-          return json(
-            {
-              error:
-                "This contact changed in another window. Reload before saving.",
-            },
-            409,
-          );
-        return json(
-          await store.saveContact(owner, {
-            ...c,
-            ...body,
-            id: c.id,
-            providerId: c.providerId,
-            chatId: c.chatId,
-            source: c.source,
-          }),
-        );
+        return json(await store.patchContact(owner, c, body));
       }
       if (action === "messages" && method === "POST") {
         const b = await readJSON(request, 14000);

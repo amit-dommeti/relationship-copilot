@@ -141,3 +141,19 @@ Demo import is browser-local, not a cloud backup. Other demo editing flows retai
 This closes the specific already-saved-draft gap left by the earlier sent-draft iteration. Unsaved text and old open browser bundles remain outside that guarantee.
 
 The final full-suite release gate now passes. The earlier intermittent timeouts were not reproduced in the resumed verification pass; their root cause is still unknown. Publication must be confirmed from the native deployment result and GitHub head.
+
+## Contact Patch Checks - October 12, 2026
+
+- [x] Overlapping successful saves losing relationship notes reproduced before the fix.
+- [x] Intervening reply loss, stale guard, and deleted-contact recreation reproduced before the fix.
+- [x] 69 unit/integration tests pass.
+- [x] Explicit empty values, false flags, arrays, normalization, owner isolation, identity/provenance, malformed input, and write failure checked.
+- [x] Write-time timestamp guard and exact write acknowledgement checked against local SQLite.
+- [x] Reviewed acknowledgement race reproduced and fixed; older send cannot clear a later identical-text draft.
+- [x] Final production build passes after review fix.
+- [x] Focused two-window notes/reminder/draft/favorite and reload checks pass.
+- [x] Full Chromium core-journey suite and new two-window persistence check pass on the final implementation.
+- [x] Applied migrations, Site identity, private audience, and AI configuration unchanged.
+- [ ] General same-field/import conflict resolution or hosted D1 fault/load testing performed.
+
+The fix preserves unsubmitted fields during server PATCH writes. It does not promise automatic merging of same-field edits, conflict-free forms/imports, or real-time LinkedIn access. No visible layout change requires a new portfolio screenshot.

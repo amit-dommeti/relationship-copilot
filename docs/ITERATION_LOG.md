@@ -2,6 +2,18 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Save Only What Changed - October 12, 2026
+
+- Reproduced two overlapping successful PATCH requests that silently restored old relationship notes while setting a reminder. Controlled read/write interleaving also reproduced loss of a new reply's state, an ineffective stale-write guard, and resurrection of a deleted contact.
+- Replaced full-record saves on the PATCH path with one owner-scoped, submitted-field JSON update. Normalization still applies; empty values, false flags, and empty circle lists remain intentional edits. Identity, creation time, and provenance cannot be overwritten. Draft versions continue rotating on each ordinary save.
+- Moved the optional timestamp guard into the update predicate. Deleted contacts return not found rather than being inserted again. Malformed PATCH bodies return a useful error without writes.
+- Verified 69 unit/integration tests. Nine new tests cover forced overlapping reads, intervening messages/deletion, explicit clearing, field normalization, ownership/provenance, malformed input, write-time guards, atomic acknowledgement, and a failed write that preserves all fields and the draft version.
+- Independent review identified a read-back race in the first implementation: returning a later writer's token could let an older send clear a newer identical-text draft. Reproduced it, changed the operation to `UPDATE ... RETURNING`, and verified the acknowledgement belongs to its own write. Re-review found no remaining issue in that fix; all 14 focused PATCH/draft tests passed.
+- Final production build, focused two-window Chromium checks, and the complete Chromium core-journey suite passed after the review fix. Coverage includes notes/reminder/draft/favorite saves, reload persistence, desktop/tablet/mobile routes, imports, reply recovery, retries, and demo isolation. Earlier attempts caught new-test setup mistakes: a single-page context could not open another tab, and fragment navigation retained the previous in-memory contact list. Corrected the test to use a separate page and explicit reload; no application assertions or time limits were weakened. Storage overlap is forced by the API tests, not inferred from sequential browser clicks.
+- This is a behavior-only change; existing portfolio captures remain representative. Applied migrations, Site identity, owner-private audience, AI settings, and external integrations remain unchanged.
+- Limits: same-field edits use last-write-wins unless a usable timestamp guard is supplied; current forms do not supply it. Timestamps can coincide within one millisecond. Unchanged fields sent by a form still count as writes. Import/edit conflicts, arbitrary delayed UI responses, and browser-local demo cross-tab conflicts are not solved. No hosted D1 fault/load test or user-outcome/AI evaluation was performed.
+- Publication is established by the native Site result and GitHub head, not inferred from this log.
+
 ## Clear Only The Sent Version - October 11, 2026
 
 - Reproduced the remaining storage-side loss: a delayed outgoing record erased an already-saved newer draft. The previous browser repair required another save to complete.
