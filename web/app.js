@@ -709,36 +709,106 @@ function settingsView() {
   const s = data.settings;
   return `${pageHeading("Make it yours", "A rhythm that feels comfortable. A message that sounds like you.")}<div class="settings-layout"><form id="settings-form"><section class="settings-section"><h2>Your rhythm</h2><label>Your first name<input name="name" value="${esc(s.name)}" maxlength="80" placeholder="What should we call you?"></label><label class="field-row"><span>People to contact each week<small style="display:block;margin-top:5px">An intention, not a quota.</small></span><input name="weeklyGoal" type="number" min="1" max="20" value="${s.weeklyGoal || 3}" required></label></section><section class="settings-section"><h2>Your voice</h2><label>A few notes on how you write<textarea name="voice" maxlength="4000" placeholder="Short and direct. I usually start with Hey. No exclamation marks unless I really mean them.">${esc(s.voice)}</textarea><small>Used only when you ask AI for a draft. Don't include confidential information.</small></label><span class="chip ${data.capabilities.ai ? "green" : "amber"}">${data.capabilities.ai ? "AI drafting available" : "AI key not configured · Starter drafts available"}</span></section><section class="settings-section"><h2>Reminders</h2><label class="checkbox-row"><input type="checkbox" name="notifications" ${s.notifications ? "checked" : ""}>Show a browser notification when a reminder is due</label><p>Browser reminders work while this app is open. Add a reminder to your calendar for alerts when it's closed.</p></section>${btn("Save preferences", "submit-settings", "check", "primary")}</form><section class="settings-section"><h2>Your data</h2><p>${demo ? "Demo changes stay in a separate browser workspace." : "Contacts, notes, and conversations are saved in your private workspace. AI receives selected context only when you request a draft."}</p><div class="row wrap">${btn("Export backup", "export", "download")}${btn("Restore backup", "import", "upload")}${localStorage.getItem("relationship-copilot-contacts") ? btn("Bring in old workspace", "migrate", "rotate-ccw") : ""}</div></section></div>`;
 }
-function openOverlay(html) {
-  lastFocus = document.activeElement;
+function canRestoreFocus(el) {
+  return (
+    el instanceof HTMLElement &&
+    el.isConnected &&
+    el !== document.body &&
+    el !== document.documentElement &&
+    (el.tabIndex >= 0 || el.hasAttribute("tabindex")) &&
+    !el.matches(":disabled") &&
+    !el.closest("[inert]") &&
+    el.getClientRects().length > 0 &&
+    getComputedStyle(el).visibility !== "hidden"
+  );
+}
+function captureOpener(element = document.activeElement) {
+  if (!(element instanceof HTMLElement) || element === document.body)
+    return null;
+  return {
+    element,
+    route: getRoute(),
+    action: element.dataset.action,
+    id: element.dataset.id,
+  };
+}
+function focusPageHeading() {
+  const heading = $("#main h1");
+  if (!heading) return;
+  heading.tabIndex = -1;
+  heading.focus();
+}
+function overlayStops() {
+  return [
+    ...overlay.querySelectorAll(
+      "button,a[href],input,select,textarea,[tabindex]",
+    ),
+  ].filter((el) => el.tabIndex >= 0 && canRestoreFocus(el));
+}
+function focusOverlay() {
+  const target = overlayStops()[0] || overlay.querySelector('[role="dialog"]');
+  if (!target) return;
+  if (target.getAttribute("role") === "dialog") target.tabIndex = -1;
+  target.focus({ preventScroll: true });
+}
+function openOverlay(html, opener) {
+  if (!overlay.firstElementChild) lastFocus = opener ?? captureOpener();
   overlay.innerHTML = html;
   app.inert = true;
   document.body.style.overflow = "hidden";
   icons();
-  overlay
-    .querySelector("input:not([type=checkbox]),textarea,button,a")
-    ?.focus();
+  focusOverlay();
 }
 function closeOverlay() {
+  if (!overlay.firstElementChild) return;
+  const opener = lastFocus;
+  lastFocus = null;
   overlay.replaceChildren();
   app.inert = false;
   document.body.style.overflow = "";
   modalName = "";
   selected = null;
-  lastFocus?.isConnected && lastFocus.focus();
+  // Saving may redraw the page immediately after closing the drawer.
+  queueMicrotask(() => {
+    if (overlay.firstElementChild) return;
+    let target =
+      opener?.route === getRoute() && canRestoreFocus(opener.element)
+        ? opener.element
+        : null;
+    if (!target && opener?.action && opener.route === getRoute())
+      target = [...app.querySelectorAll("[data-action]")].find(
+        (el) =>
+          el.dataset.action === opener.action &&
+          el.dataset.id === opener.id &&
+          canRestoreFocus(el),
+      );
+    if (target) target.focus({ preventScroll: true });
+    else focusPageHeading();
+  });
 }
-function modal(title, content) {
+function modal(title, content, opener) {
   openOverlay(
     `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><header class="modal-head"><h2>${esc(title)}</h2>${ib("Close", "close", "x")}</header>${content}</section></div>`,
+    opener,
   );
 }
-function openPerson(id, tab = "draft") {
+function openPerson(id, tab = "draft", opener) {
   selected = id;
   detailTab = tab;
   intent = selectedContact()?.needsReply ? "reply" : "catch-up";
-  drawDetail(true);
+  drawDetail(true, opener);
 }
-function drawDetail(first = false) {
+function selectDetailTab(tab) {
+  if (!["draft", "conversation", "about"].includes(tab)) return;
+  if (detailTab !== tab) {
+    detailTab = tab;
+    drawDetail();
+  }
+  overlay
+    .querySelector('[role="tab"][aria-selected="true"]')
+    ?.focus({ preventScroll: true });
+}
+function drawDetail(first = false, opener) {
   const c = selectedContact();
   if (!c) return;
   const previousForm = $("#reply-form");
@@ -769,7 +839,7 @@ function drawDetail(first = false) {
   ]
     .map(
       ([v, l]) =>
-        `<button role="tab" aria-selected="${detailTab === v}" class="${detailTab === v ? "active" : ""}" data-action="detail-tab" data-id="${v}">${l}</button>`,
+        `<button type="button" role="tab" id="contact-tab-${v}" aria-controls="contact-panel-${v}" aria-selected="${detailTab === v}" tabindex="${detailTab === v ? 0 : -1}" class="${detailTab === v ? "active" : ""}" data-action="detail-tab" data-id="${v}">${l}</button>`,
     )
     .join("")}</div></div>`;
   let body = "";
@@ -791,8 +861,14 @@ function drawDetail(first = false) {
     body = `<section>${messages.length ? messages.map((m) => `<div class="bubble ${m.direction}">${esc(m.text)}</div><div class="message-meta ${m.direction}">${m.direction === "out" ? "You" : esc(c.name.split(" ")[0])} · ${fmt(m.at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · ${m.source === "linkedin" ? "LinkedIn" : "Saved manually"}</div>`).join("") : '<p class="muted">No conversation saved yet.</p>'}</section><form class="reply-form" id="reply-form"><label>Save a message<textarea name="text" placeholder="Paste their reply here..." required maxlength="12000"></textarea></label><div class="between"><select name="direction" aria-label="Message direction"><option value="in">Their reply</option><option value="out">My message</option></select>${btn("Save message", "submit-reply", "plus", "primary")}</div></form>${c.needsReply ? `<div class="detail-actions">${btn("Draft a reply", "reply-draft", "sparkles")}${btn("No reply needed", "resolve", "check")}</div>` : ""}<form id="reminder-form" class="reply-form"><label>When should we remind you?<input type="datetime-local" name="reminderAt" value="${localDate(c.reminderAt)}" required></label><div class="detail-actions">${btn("Set reminder", "submit-reminder", "bell")}${btn("Add to calendar", "calendar", "calendar-days")}${c.reminderAt ? btn("Clear", "clear-reminder", "x", "quiet") : ""}</div><p class="small-caption">Calendar reminders can alert you even when Copilot is closed.</p></form>`;
   if (detailTab === "about")
     body = `<section class="detail-section"><div class="detail-label">How you know each other</div><p class="detail-memory">${esc(c.memory || "A short memory makes the next message easier.")}</p><div class="row" style="margin-top:16px">${btn("Edit context", "edit-person", "pencil", "quiet", `data-id="${c.id}"`)}</div></section>${groups.map((g) => `<section><div class="detail-label">${esc(g.name)} · Shared memory</div><p class="detail-memory">${esc(g.memory || "No shared memory yet.")}</p></section>`).join("")}<section class="detail-section stack"><div class="between"><span class="muted">Last hello</span><span>${relative(c.lastContactAt)}</span></div><div class="between"><span class="muted">Keep in touch</span><span>Every ${c.cadence} days</span></div><div class="between"><span class="muted">Added via</span><span>${esc(c.source)}</span></div></section><div class="detail-actions">${btn(c.archived ? "Restore person" : "Archive person", "archive", "archive", "quiet", `data-id="${c.id}"`)}${dateValue(c.snoozedUntil) > Date.now() ? btn("Unsnooze", "unsnooze", "rotate-ccw", "quiet", `data-id="${c.id}"`) : ""}</div>`;
-  const html = `<div class="detail-backdrop"><section class="detail" role="dialog" aria-modal="true" aria-label="${esc(c.name)}">${header}<div class="detail-body">${body}</div></section></div>`;
-  if (first) openOverlay(html);
+  const panels = ["draft", "conversation", "about"]
+    .map(
+      (tab) =>
+        `<div class="detail-body" id="contact-panel-${tab}" role="tabpanel" aria-labelledby="contact-tab-${tab}" tabindex="0" ${tab === detailTab ? "" : "hidden"}>${tab === detailTab ? body : ""}</div>`,
+    )
+    .join("");
+  const html = `<div class="detail-backdrop"><section class="detail" role="dialog" aria-modal="true" aria-label="${esc(c.name)}">${header}${panels}</section></div>`;
+  if (first) openOverlay(html, opener);
   else {
     overlay.innerHTML = html;
     icons();
@@ -847,6 +923,10 @@ function drawDetail(first = false) {
       field.scrollTop = focus.scroll;
     }
   }
+  if (!overlay.contains(document.activeElement))
+    overlay
+      .querySelector('[role="tab"][aria-selected="true"]')
+      ?.focus({ preventScroll: true });
 }
 function localDate(value) {
   if (!dateValue(value)) return "";
@@ -855,7 +935,7 @@ function localDate(value) {
     .toISOString()
     .slice(0, 16);
 }
-function personForm(id) {
+function personForm(id, opener) {
   const c = data.contacts.find((c) => c.id === id) || {
     circleIds: [],
     cadence: 60,
@@ -868,6 +948,7 @@ function personForm(id) {
   modal(
     c.id ? "Edit relationship" : "Add someone to your corner",
     `<form id="person-form" data-id="${c.id || ""}" class="form-stack"><label>Name<input name="name" value="${esc(c.name)}" placeholder="Their name" maxlength="120" required></label><div class="field-grid"><label>Current company<input name="company" value="${esc(c.company)}" maxlength="150" placeholder="Where they work now"></label><label>Role<input name="role" value="${esc(c.role)}" maxlength="200" placeholder="What they do"></label></div><label>LinkedIn profile<input name="url" type="url" value="${esc(c.url)}" placeholder="https://www.linkedin.com/in/..." maxlength="500"></label><label>How do you know each other?<textarea name="memory" placeholder="We worked together on..." maxlength="4000">${esc(c.memory)}</textarea></label><label>A reason to say hello<input name="reason" value="${esc(c.reason)}" maxlength="1000" placeholder="Optional: a shared memory, a question, an update"></label><div class="field-grid"><label>Check-in rhythm<select name="cadence">${rhythms.map((n) => `<option value="${n}" ${cadence === n ? "selected" : ""}>Every ${n} days</option>`).join("")}</select></label><label>Last time you spoke<input name="lastContactAt" type="date" value="${c.lastContactAt ? localDate(c.lastContactAt).slice(0, 10) : ""}"></label></div><fieldset style="border:0;padding:0;margin:0"><legend class="detail-label">Circles</legend><div class="row wrap">${data.circles.map((g) => `<label class="checkbox-row"><input type="checkbox" name="circleIds" value="${g.id}" ${c.circleIds.includes(g.id) ? "checked" : ""}>${esc(g.name)}</label>`).join("") || "<p>Create a circle later to remember your shared chapter.</p>"}</div></fieldset><div class="form-actions">${btn("Cancel", "close", "", "quiet")}<button class="button primary" type="submit">${i("check")}Save person</button></div></form>`,
+    opener,
   );
   const form = $("#person-form");
   form
@@ -881,7 +962,7 @@ function personForm(id) {
     unconfirmed: new Set(),
   });
 }
-function circleForm(id) {
+function circleForm(id, opener) {
   const g = data.circles.find((g) => g.id === id) || { color: "green" };
   activeColor = g.color;
   modalName = "circle";
@@ -896,8 +977,14 @@ function circleForm(id) {
         .join("") ||
       "<p>Add people first, then bring them into this circle.</p>"
     }</div></fieldset><div class="form-actions">${btn("Cancel", "close", "", "quiet")}<button class="button primary" type="submit">${i("check")}Save circle</button></div></form>`,
+    opener,
   );
   const form = $("#circle-form");
+  const members = form.querySelector("fieldset .stack");
+  members.id = "circle-members";
+  members.tabIndex = 0;
+  members.setAttribute("role", "group");
+  members.setAttribute("aria-label", "Circle member list");
   form
     .querySelector(".form-actions")
     .insertAdjacentHTML(
@@ -910,12 +997,13 @@ function circleForm(id) {
   });
 }
 let importAttempt;
-function importModal(paste = false) {
+function importModal(paste = false, opener) {
   modalName = "import";
   stagedImport = null;
   modal(
     "Bring your people along",
     `<div class="stack">${paste ? `<label>Paste CSV or spreadsheet rows<textarea id="paste-content" rows="7" placeholder="Name,Company,Role,URL&#10;Maya Patel,Stripe,Product Manager,"></textarea></label>${btn("Preview contacts", "preview-paste", "arrow-right", "primary")}` : `<label class="dropzone" id="dropzone">${i("upload")}<strong>Choose a file or drop it here</strong><p>LinkedIn ZIP, CSV, or Copilot backup · Up to 20 MB</p><input type="file" id="import-file" accept=".csv,.zip,.json" aria-label="Choose contact file"></label><p>We'll show you what we found before anything is saved. Existing notes and circles are preserved.</p>${btn("Paste rows instead", "paste", "clipboard", "quiet")}`}<div id="import-preview"></div></div>`,
+    opener,
   );
 }
 async function prepareImport(read) {
@@ -946,10 +1034,11 @@ function previewImport(result) {
       )}</div>${result.contacts.length > 8 ? `<p>And ${result.contacts.length - 8} more.</p>` : ""}<label>Add new people to a circle<select id="import-circle"><option value="">No circle yet</option>${data.circles.map((g) => `<option value="${g.id}">${esc(g.name)}</option>`).join("")}</select></label><div id="import-save-error" role="alert"></div><div class="form-actions">${btn(result.kind === "backup" ? "Restore backup" : "Import contacts", "confirm-import", "check", "primary")}</div>`;
   icons();
 }
-function linkedInHelp() {
+function linkedInHelp(opener) {
   modal(
     "An assistant for the handoff",
     `<div class="stack"><div class="notice">An option to explore, not an active connection. No agent has been started.</div><p>A personal agent could help request LinkedIn's official archive, wait for it, and prepare the contacts for import. It would not unlock real-time messages.</p><h3>You stay in control</h3><p>You sign in and complete verification yourself. Some browsers or LinkedIn may block automated steps; file upload may still need you. An agent should stop at a block, not work around it.</p><h3>Keep the handoff narrow</h3><p>Use Connections only. Approve the destination and preview before saving. No inbox scraping, passwords in chat, automated messages, or raw archives in GitHub.</p><div class="row wrap">${btn("Copy assistant brief", "agent-brief", "copy", "primary")}${btn("Done", "close", "check", "quiet")}</div></div>`,
+    opener,
   );
 }
 function download(content, name, type) {
@@ -989,8 +1078,30 @@ window.addEventListener("hashchange", () => {
   page = 0;
   closeOverlay();
   render();
+  focusPageHeading();
 });
 document.addEventListener("keydown", (e) => {
+  const tab = e.target.closest('[data-action="detail-tab"]');
+  if (
+    tab &&
+    !e.altKey &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    ["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
+  ) {
+    e.preventDefault();
+    const tabs = [...overlay.querySelectorAll('[role="tab"]')];
+    const index = tabs.indexOf(tab);
+    const next =
+      e.key === "Home"
+        ? 0
+        : e.key === "End"
+          ? tabs.length - 1
+          : (index + (e.key === "ArrowRight" ? 1 : -1) + tabs.length) %
+            tabs.length;
+    selectDetailTab(tabs[next].dataset.id);
+    return;
+  }
   if (e.key === "Escape") {
     closeOverlay();
     $(".sidebar")?.classList.remove("open");
@@ -1001,14 +1112,19 @@ document.addEventListener("keydown", (e) => {
     setTimeout(() => $("#people-search")?.focus(), 40);
   }
   if (e.key === "Tab" && overlay.firstElementChild) {
-    const nodes = [
-      ...overlay.querySelectorAll(
-        'button:not(:disabled), a[href], input:not(:disabled), select, textarea, [tabindex="0"]',
-      ),
-    ].filter((el) => el.offsetParent !== null);
+    const nodes = overlayStops();
     const first = nodes[0],
       last = nodes.at(-1);
-    if (e.shiftKey && document.activeElement === first) {
+    if (!nodes.length) {
+      e.preventDefault();
+      focusOverlay();
+    } else if (
+      !overlay.contains(document.activeElement) ||
+      document.activeElement.matches(":disabled")
+    ) {
+      e.preventDefault();
+      (e.shiftKey ? last : first).focus();
+    } else if (e.shiftKey && document.activeElement === first) {
       e.preventDefault();
       last?.focus();
     } else if (!e.shiftKey && document.activeElement === last) {
@@ -1111,11 +1227,16 @@ document.addEventListener("click", async (e) => {
   if (!target) return;
   const action = target.dataset.action,
     id = target.dataset.id;
+  const opener = captureOpener(target);
   const replyFormToSubmit =
     action === "submit-reply" ? target.closest("form") : null;
   const c = selectedContact();
   e.preventDefault();
   if (target.disabled) return;
+  if (action === "detail-tab") {
+    selectDetailTab(id);
+    return;
+  }
   if (["submit-reminder", "clear-reminder"].includes(action)) {
     const form = target.closest("#reminder-form");
     if (action === "submit-reminder") form?.requestSubmit();
@@ -1166,7 +1287,7 @@ document.addEventListener("click", async (e) => {
     if (draftJob) paintDraftGeneration();
     if (sentDraft) paintSentStatus();
     if (["demo", "exit-demo"].includes(action) && replyBuffer.hasUnsaved()) {
-      openPerson(replyBuffer.firstUnsaved(workspace()), "conversation");
+      openPerson(replyBuffer.firstUnsaved(workspace()), "conversation", opener);
       throw new Error(
         "Save or clear this message before switching workspaces.",
       );
@@ -1233,10 +1354,10 @@ document.addEventListener("click", async (e) => {
       closeOverlay();
       history.replaceState(null, "", "/#today");
       await boot();
-    } else if (action === "add-person") personForm();
-    else if (action === "edit-person") personForm(id || selected);
-    else if (action === "new-circle") circleForm();
-    else if (action === "edit-circle") circleForm(id);
+    } else if (action === "add-person") personForm(undefined, opener);
+    else if (action === "edit-person") personForm(id || selected, opener);
+    else if (action === "new-circle") circleForm(undefined, opener);
+    else if (action === "edit-circle") circleForm(id, opener);
     else if (action === "color") {
       activeColor = id;
       overlay.querySelectorAll(".swatch").forEach((b) => {
@@ -1249,11 +1370,12 @@ document.addEventListener("click", async (e) => {
       query = "";
       go("people");
     } else if (action === "person" || action === "conversation")
-      openPerson(id, action === "conversation" ? "conversation" : "draft");
-    else if (action === "detail-tab") {
-      detailTab = id;
-      drawDetail();
-    } else if (action === "favorite") {
+      openPerson(
+        id,
+        action === "conversation" ? "conversation" : "draft",
+        opener,
+      );
+    else if (action === "favorite") {
       await updateContact(id, {
         favorite: !data.contacts.find((c) => c.id === id).favorite,
       });
@@ -1293,7 +1415,7 @@ document.addEventListener("click", async (e) => {
       inboxFilter = id;
       render();
     } else if (action === "import" || action === "paste")
-      importModal(action === "paste");
+      importModal(action === "paste", opener);
     else if (action === "preview-paste")
       await prepareImport(() => parseContacts($("#paste-content").value));
     else if (action === "confirm-import") {
@@ -1330,7 +1452,7 @@ document.addEventListener("click", async (e) => {
         `${result.added} people added. ${result.updated} existing contacts updated.`,
       );
     } else if (action === "migrate") {
-      importModal();
+      importModal(false, opener);
       const old = JSON.parse(
           localStorage.getItem("relationship-copilot-contacts") || "[]",
         ),
@@ -1451,7 +1573,7 @@ document.addEventListener("click", async (e) => {
       if (replyFormToSubmit?.isConnected) replyFormToSubmit.requestSubmit();
     } else if (action === "submit-settings")
       $("#settings-form").requestSubmit();
-    else if (action === "linkedin-help") linkedInHelp();
+    else if (action === "linkedin-help") linkedInHelp(opener);
     else if (action === "agent-brief") {
       await navigator.clipboard.writeText(
         "Help me bring my LinkedIn connections into my private Relationship Copilot app. First confirm the destination with me. Use only LinkedIn's official Download your data flow, requesting Connections only. Let me sign in and complete verification privately. Do not scrape profiles or messages, send messages, or bypass any restriction. Tell me if a download or upload needs my help. When the archive is ready, inspect only Connections.csv, show the import preview, and ask before saving it to the confirmed workspace. Do not put personal data or the raw archive in GitHub. This is a one-time import, not permission for ongoing monitoring.",
@@ -1461,6 +1583,7 @@ document.addEventListener("click", async (e) => {
       modal(
         "Why these people?",
         `<div class="stack"><p>Suggestions use your check-in rhythm, time since your last message, relationship notes, and close-connection stars.</p><p>Recent conversations and snoozed people stay out of this list. Replies waiting on you go to Inbox.</p><p>These are transparent local suggestions, not AI predictions about someone's willingness to respond. AI is used separately when you ask for a message draft.</p>${btn("Got it", "close", "check", "primary")}</div>`,
+        opener,
       );
   } catch (error) {
     if (draftJob && !draftJobs.isCurrent(draftJob)) return;

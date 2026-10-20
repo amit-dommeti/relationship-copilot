@@ -86,6 +86,12 @@ Evidence: before/after browser regression, local rollback and boundary tests, a 
 
 Evidence: controlled before/after Chromium checks, failure/retry tests, demo storage failures, and desktop/mobile status review. This is a narrow application timing improvement, not measured follow-through, notification delivery, real-time LinkedIn access, or crash recovery.
 
+## Accessibility Iteration: Keep The User's Place
+
+"I tested the choose-person-to-reply journey without a mouse and reproduced losing focus on a tab change. I connected each tab to its panel and made navigation predictable. Review found another timing problem: a dialog waiting for a draft save remembered whichever field was focused later, rather than the button the user activated. I reproduced that and moved the capture to the beginning of the interaction. The lesson was that accessibility has to survive slow operations and screen updates, not just a static layout."
+
+Evidence: before/after local keyboard regressions, synthetic pending-save checks, independent code review, and desktop/mobile focus captures. No screen-reader audit, conformance certification, or measured user impact is claimed.
+
 ## Don't Overclaim
 
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.

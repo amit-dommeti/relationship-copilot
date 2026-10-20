@@ -16,6 +16,11 @@ import { checkPersonFormSafety } from "./person-form-browser.mjs";
 import { checkPersonSaveLifecycle } from "./person-save-browser.mjs";
 import { checkReminderSafety } from "./reminder-browser.mjs";
 import {
+  checkKeyboardNavigation,
+  checkDelayedOpener,
+  checkRouteFocus,
+} from "./keyboard-browser.mjs";
+import {
   checkCircleSave,
   checkCircleDraftTiming,
 } from "./circle-save-browser.mjs";
@@ -351,6 +356,9 @@ try {
   await checkCircleSave(page, base);
   await checkCircleDraftTiming(page, base);
   await checkDemoImport(page, base);
+  await checkKeyboardNavigation(page, base);
+  await checkDelayedOpener(page, base);
+  await checkRouteFocus(page, base);
   await page.goto(base + "/?demo=1#today");
   await page
     .getByRole("heading", { name: "A little closer, one hello at a time." })

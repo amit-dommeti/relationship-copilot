@@ -50,6 +50,8 @@ These are real browser captures of the v2 app with fictional demo data. The comp
 
 **Follow through without losing your place:** slow reminder saves preserve a newer time and leave your reply or other open editor alone. Saving and retry feedback stays beside the time field. Calendar downloads work even while a draft is saving. [Behavior and limits](docs/ARCHITECTURE.md#reminder-save-lifecycle).
 
+**Keep your place with the keyboard:** use arrow keys between contact tabs, Tab into the selected panel, and Escape to return to the page. Dialogs retain their original opener through editor changes and slow draft saves. [Keyboard behavior and verification limits](docs/ARCHITECTURE.md#keyboard-navigation).
+
 ## Try It Locally
 
 Requires Node.js 22.13+ (Node 24 LTS recommended).

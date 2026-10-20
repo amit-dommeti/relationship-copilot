@@ -1,6 +1,6 @@
 # Current State
 
-Updated October 12, 2026. Scope: Relationship Copilot only.
+Updated October 19, 2026. Scope: Relationship Copilot only.
 
 ## Product And Boundaries
 
@@ -12,20 +12,23 @@ Updated October 12, 2026. Scope: Relationship Copilot only.
 
 ## Latest Verified Change
 
-Reminder Set/Clear captures its person and submitted time before awaiting draft autosave. One pending operation per person survives drawer reopening. Confirmation updates only the matching reminder controls, without redrawing the drawer or replacing newer time, reply text, focus, or a different editor. Inline saving/error feedback supports retries. Calendar download uses the currently displayed person and time immediately, independently of draft saving.
+Contact details support Left/Right arrows with wraparound, Home/End, a single active tab in the Tab sequence, and labeled content panels. Switching tabs retains focus; activating the already selected tab leaves unsaved controls alone. Dialog Tab movement excludes disabled/hidden controls and recovers if focus is lost during redraw. Closing restores the original page opener through replacement dialogs, a matching control after rerender, or the page heading if the opener is gone. Route changes focus their new heading.
 
 Evidence collected:
 
-- Browser reproduced a delayed reminder save replacing a newer entered time with the older submitted time before the fix.
-- Production build and all 84 unit/integration tests pass. Expanded focused Chromium checks pass for slow Set/Clear, new time and reply cursor preservation, duplicate/reopen locks, failure/retry, unload/workspace guards, unrelated editors, pre-autosave identity, calendar download, and past-time validation.
-- Demo reminder saves write storage before replacing in-memory state. Injected storage failures preserve both states; retry and reload persistence pass with no private-workspace writes.
-- Desktop/mobile status captures were inspected. Existing portfolio screenshots remain representative. Independent read-only review found no actionable issue in the scoped diff; nine isolated function checks passed. The complete Chromium suite passes on the final build, including six desktop/tablet/mobile routes and the preceding import/draft/reply/person/circle protections. Publication is confirmed separately by native Site success and the GitHub head.
+- Reproduced Enter on Conversation dropping focus outside the contact drawer before the fix. Initial focused Chromium checks pass for tabs/panels, text-field key isolation, input preservation on active-tab activation, focus containment, nested/replaced/missing openers, disabled pending-circle controls, and desktop/mobile focus indicators.
+- Production build and all 84 unit/integration tests pass after the repairs. Desktop/mobile focused screenshots were inspected; existing portfolio layouts remain representative.
+- Independent review found that capturing the opener after disabling/waiting can remember the wrong control. Reproduced Import opening after a slow draft save and returning to a Search field focused during the wait. Capture the actual trigger before disabling or awaiting, pass it explicitly to dialog helpers, and reject body/nonfocusable return targets. The delayed-opener regression now passes.
+- The initial full run caught the native scroll-container focus case in a populated circle. Keep in-dialog native focus, explicitly label/focus the member list, and test scrolling followed by Tab to Cancel during saving. Expanded focused checks pass with eight synthetic contacts instead of an empty list.
+- Review also caught offscreen heading focus after changing routes from a scrolled page. Reproduced it and allow heading focus to scroll into view; the dedicated browser regression passes. Independent re-review of the scoped repairs found no further issue.
+- All focused keyboard checks, the build, 84 automated tests, and the complete Chromium suite pass on the final application code. Two earlier final-build runs timed out waiting for a periodic circle refresh and a toast dismissal. The circle checks passed in isolation; the complete suite then passed with idle sleep inhibited for the test process, without code, assertion, or timeout changes. The timeout causes remain unresolved. Publication is established separately by native Site success and the GitHub head.
 - No server contract, applied migration, Site identity, audience, AI setting, or external integration changes. Tests use synthetic data only.
 
 Pending person, circle, and reminder saves warn before unloading and block workspace switches/import confirmation until settled. Unsaved forms remain tab-memory only, and explicitly closing them still discards unsaved values. This is not form autosave, general conflict resolution, or crash recovery. Older open bundles retain their previous behavior until reloaded.
 
 ## Earlier Protections
 
+- Reminder Set/Clear keeps the clicked person/time through draft autosave, preserves newer time and reply input on completion, and retains per-person pending locks. Demo persistence precedes in-memory replacement; calendar downloads do not wait for draft saves.
 - Circle details and changed memberships commit together, with untouched checkbox intent and unrelated circles preserved. Failure retains selections; demo persistence precedes in-memory replacement. Membership-only writes preserve draft text and version together. Confirmed creation retains its identity before refresh.
 - Person saves preserve newer typing, focus, and selection; confirmations advance only their submitted baseline. Repeat submissions are blocked and delayed completions leave other forms alone. Continued creation updates the confirmed identity and avoids duplicate insertion after refresh.
 - Relationship forms submit only changed fields plus unconfirmed retry intent, preserving newer untouched metadata and exact timestamps. Custom check-in rhythms remain selectable. Intentional clears and lost-acknowledgement reverts persist.
@@ -40,7 +43,7 @@ Pending person, circle, and reminder saves warn before unloading and block works
 - App: https://relationship-copilot-amit.plumlyric7.chatgpt.site
 - Public source: https://github.com/amit-dommeti/relationship-copilot
 - Existing identity is tracked in `.openai/hosting.json`; never replace it or broaden access without approval.
-- Prior confirmed release: atomic-circle saves, Site source `7066ab92c3ef099ec157b64d63f04f33ba62a9b6`, GitHub `92d1e7cf59fccef0c230b8e832778b99c6fdafe5`, identical source tree `3cd43f49542800626cb487c5c7f8f55c94992bbe`. This file records the reminder follow-up, not its own publication receipt.
+- Prior confirmed release: reminder lifecycle, Site source `ed0a41f959ca69a25853b61e91bcf5aa0057b787`, GitHub `14f08eab0b6a772ac4e7a6d5e5a0cc3a55389fa4`, identical source tree `9ab78045df2f563246dd48a035d4d731d1efe307`. This file records the keyboard follow-up, not its own publication receipt.
 - Open/synchronize and package via the Sites source helper. Use connected GitHub write tools if local push credentials are unavailable. Never put credentials, contact exports, or private data in GitHub.
 
 ## Limits And Next Useful Checks
@@ -48,7 +51,7 @@ Pending person, circle, and reminder saves warn before unloading and block works
 - Same-field editing, imports racing with edits, and arbitrary out-of-order UI responses are not general conflict-resolved. The optional timestamp guard is not a unique revision and is not currently supplied by forms.
 - Unsaved drafts/replies/forms can be lost on forced shutdown. Unload warnings are not guaranteed by every mobile lifecycle. Retry identities do not survive reloads or devices.
 - Demo storage is browser-local, subject to eviction, and not cross-tab conflict-safe. Import, circle, and reminder saves use storage-before-state; other demo actions retain their existing best-effort behavior.
-- Chromium checked; other engines, full screen-reader audit, and production D1 load/fault tests remain unverified. Local import tests cover 10,000 contacts, one transactional batch, bounded query count, and injected rollback.
+- Chromium checked; other engines, full screen-reader audit, and production D1 load/fault tests remain unverified. Keyboard/markup checks are not a claim of accessibility conformance or assistive-technology validation. Local import tests cover 10,000 contacts, one transactional batch, bounded query count, and injected rollback.
 - Preserve browser failure diagnostics. Earlier intermittent toast/autosave timeouts were not reproduced in the previous final passes, but their root cause remains unknown.
 - Preference and other action lifecycles remain separate. Reminder entry is not buffered across explicit tab changes, closing, or another action's redraw; failures after reopening ask the user to review the displayed time. Person/circle creation with a lost acknowledgement can still duplicate on retry; unlike message recording, creation has no retained idempotency key. Same-field edits remain last-write-wins.
 - Real-user import and live AI preference/latency evaluation require authorization. No adoption, retention, writing-quality uplift, or production incident reduction is claimed.

@@ -216,3 +216,21 @@ The all-or-nothing guarantee covers a circle save in the updated app. It does no
 - [ ] Durable reminder-entry recovery, general response ordering, or other-engine/assistive-technology audit implemented.
 
 Pending reminder protection does not retain unsaved time across explicit closing or another action's redraw. Native Site/GitHub results establish publication separately.
+
+## Keyboard Navigation Checks - October 19, 2026
+
+- [x] Enter on a contact tab losing focus reproduced before the fix.
+- [x] Initial build and all 84 unit/integration tests pass.
+- [x] Focused Chromium tabs, panel links/visibility, text-field key isolation, and active-tab input preservation checks pass.
+- [x] Tab containment/recovery, nested/replaced/missing opener, and pending disabled-form checks pass.
+- [x] Desktop/mobile focus indicators visually inspected with fictional data.
+- [x] Reviewed delayed-opener issue reproduced before capture-time repair.
+- [x] Delayed-opener regression, expanded populated-circle scroll checks, final production build, and all 84 automated tests pass after repairs.
+- [x] Complete Chromium suite passes on final build, including the new keyboard regressions and preceding core-journey checks.
+- [x] Scrolled-route heading-visibility failure reproduced and repaired; focused regression passes.
+- [x] Independent re-review of scoped repairs completed with no further finding.
+- [ ] Screen-reader audit, other-engine verification, and accessibility conformance assessment completed.
+
+Keyboard support is a verified behavior only where checked, not a claim of universal accessibility. Native Site/GitHub results establish publication separately.
+
+Two earlier final-build browser attempts timed out on a periodic refresh and a toast dismissal. The final complete run passed with idle sleep inhibited, without code, assertion, or timeout changes. Root causes remain unresolved.

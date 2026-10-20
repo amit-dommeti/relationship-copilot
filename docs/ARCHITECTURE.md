@@ -120,6 +120,16 @@ Acknowledgement updates the saved-time baseline and Clear control only in the ma
 
 This is pending-operation safety, not reminder-entry autosave. Explicit closing, tab changes, and redraws from other actions can still discard an unsaved time. No general ordering guarantee is added for same-field writes from other tabs/devices or older refreshes. Calendar alerts require the user to add the downloaded file to their calendar; browser notifications require the app to remain open.
 
+## Keyboard Navigation
+
+The contact drawer uses automatically activated horizontal tabs: Left/Right wrap, Home/End select the first/last tab, and only the active tab is in the Tab sequence. Each tab controls a uniquely identified, labeled panel; inactive panels are empty and hidden. The visible panel is focusable so its relationship/history content is reachable before its controls. Activation preserves focus on the new tab and re-activation is a no-op for content, avoiding unnecessary input loss. Text-field arrow keys retain their native behavior.
+
+Dialog focus stops are visible, enabled, non-inert controls with nonnegative tabindex. Tab/Shift+Tab wrap within the overlay and recover when focus is outside it or on a disabled control. Native focus on an in-dialog scroll container is not treated as lost focus. The circle member list is an explicitly focusable, labeled group so it stays scrollable while saving disables its checkboxes. A dialog with no available controls remains programmatically focusable. Detail redraws retain the existing reply-field restoration, falling back to the active tab when a replaced control lost focus.
+
+Click handlers capture the actual opener before disabling controls or awaiting draft saves. Helpers pass it explicitly to the overlay, while replacement dialogs keep the original page opener. Closing clears the overlay and restores focus in a microtask so an immediate page redraw can finish first. Prefer the still-focusable original, then a same-route action/identity match, then the main heading. Body, hidden, disabled, and inert targets are rejected. Escape with no open dialog does not restore a stale opener; hash navigation focuses its new page heading and allows scrolling to make that heading visible.
+
+References: [W3C tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) and [modal dialogs](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/), consulted October 19, 2026. Verification uses synthetic Chromium keyboard interactions and visual captures, not screen-reader testing or a full accessibility audit. Other browsers, positive tabindex ordering, and arbitrary external focus mutations are not comprehensively tested. No persistence or AI contract changed.
+
 ## Known Boundaries
 
 This is not end-to-end encrypted. The hosting operator can access stored data. Protect backups and hosting access. Per-process request limiting is modest protection for an owner-private app, not a distributed anti-abuse system. Browser notifications require an open app; calendar alarms are delegated to the user's calendar. No scheduled LinkedIn sync exists.

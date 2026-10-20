@@ -50,7 +50,9 @@ a {
   text-decoration: none;
 }
 button:focus-visible,
-a:focus-visible {
+a:focus-visible,
+#main h1:focus-visible,
+#circle-members:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
 }
@@ -1338,6 +1340,13 @@ input[type="checkbox"] {
   padding: 26px;
   display: grid;
   gap: 24px;
+}
+.detail-body[hidden] {
+  display: none;
+}
+.detail-body:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
 }
 .detail-body h3 {
   margin-bottom: 10px;
