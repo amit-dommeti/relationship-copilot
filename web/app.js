@@ -225,7 +225,8 @@ window.addEventListener("beforeunload", (event) => {
     !sentDrafts.size &&
     !pendingPersonForms.size &&
     !pendingCircleForms.size &&
-    !reminderJobs.size
+    !reminderJobs.size &&
+    !pendingImport
   )
     return;
   event.preventDefault();
@@ -996,7 +997,7 @@ function circleForm(id, opener) {
     unconfirmed: new Set(),
   });
 }
-let importAttempt;
+let importAttempt, pendingImport;
 function importModal(paste = false, opener) {
   modalName = "import";
   stagedImport = null;
@@ -1007,6 +1008,7 @@ function importModal(paste = false, opener) {
   );
 }
 async function prepareImport(read) {
+  if (pendingImport) return;
   const preview = $("#import-preview");
   const attempt = (importAttempt = Symbol());
   stagedImport = null;
@@ -1233,6 +1235,24 @@ document.addEventListener("click", async (e) => {
   const c = selectedContact();
   e.preventDefault();
   if (target.disabled) return;
+  if (
+    pendingImport &&
+    [
+      "demo",
+      "exit-demo",
+      "import",
+      "paste",
+      "migrate",
+      "confirm-import",
+    ].includes(action)
+  ) {
+    if (action !== "confirm-import")
+      notify(
+        "Wait for your import to finish before importing again or switching workspaces.",
+        true,
+      );
+    return;
+  }
   if (action === "detail-tab") {
     selectDetailTab(id);
     return;
@@ -1260,6 +1280,7 @@ document.addEventListener("click", async (e) => {
   const draftJob = action === "draft" && c ? draftJobs.begin(c.id) : null;
   const requestedIntent = intent;
   if (action === "draft" && !draftJob) return;
+  let importJob;
   target.disabled = true;
   try {
     if (
@@ -1303,6 +1324,37 @@ document.addEventListener("click", async (e) => {
       throw new Error(
         "Wait for your message to finish saving before switching workspaces or importing.",
       );
+    if (action === "confirm-import") {
+      if (!stagedImport) throw new Error("Choose a contact file first.");
+      const group = $("#import-circle")?.value;
+      const dialog = target.closest('[role="dialog"]');
+      importJob = {
+        dialog,
+        preview: $("#import-preview"),
+        payload: {
+          ...stagedImport,
+          contacts: stagedImport.contacts.map((c) => ({
+            ...c,
+            circleIds: group
+              ? [...new Set([...c.circleIds, group])]
+              : c.circleIds,
+          })),
+        },
+        controls: [...dialog.querySelectorAll("input,textarea,select,button")]
+          .filter((el) => el.dataset.action !== "close")
+          .map((el) => [el, el.disabled]),
+      };
+      pendingImport = importJob;
+      dialog.setAttribute("aria-busy", "true");
+      for (const [control] of importJob.controls) control.disabled = true;
+      const error = importJob.preview.querySelector("#import-save-error");
+      error.textContent = "";
+      error.className = "";
+      importJob.preview.insertAdjacentHTML(
+        "beforeend",
+        '<p id="import-status" class="small-caption" role="status">Saving your import...</p>',
+      );
+    }
     // Reading and copying must not depend on the save service being available.
     const readOnly = [
       "copy",
@@ -1419,16 +1471,10 @@ document.addEventListener("click", async (e) => {
     else if (action === "preview-paste")
       await prepareImport(() => parseContacts($("#paste-content").value));
     else if (action === "confirm-import") {
-      if (!stagedImport) throw new Error("Choose a contact file first.");
       draftJobs.reset();
-      const group = $("#import-circle")?.value;
-      const incoming = stagedImport.contacts.map((c) => ({
-        ...c,
-        circleIds: group ? [...new Set([...c.circleIds, group])] : c.circleIds,
-      }));
       let result;
       if (demo) {
-        result = mergeDemoImport(data, { ...stagedImport, contacts: incoming });
+        result = mergeDemoImport(data, importJob.payload);
         try {
           localStorage.setItem("rc-demo-v2", JSON.stringify(result.state));
         } catch {
@@ -1438,16 +1484,32 @@ document.addEventListener("click", async (e) => {
         }
         data = result.state;
       } else {
-        result = await request("/api/import", "POST", {
-          ...stagedImport,
-          contacts: incoming,
-        });
+        result = await request("/api/import", "POST", importJob.payload);
         await refresh(false);
       }
-      closeOverlay();
-      circleFilter = "all";
-      go("people");
-      render();
+      if (importJob.dialog.isConnected) {
+        closeOverlay();
+        circleFilter = "all";
+        go("people");
+        render();
+      } else if ($("#people-results")) {
+        // Refresh imported rows without replacing the search field or another editor.
+        const results = $("#people-results");
+        const focus = results.contains(document.activeElement)
+          ? captureOpener()
+          : null;
+        results.innerHTML = peopleTable();
+        icons();
+        if (focus) {
+          const replacement = [
+            ...results.querySelectorAll("[data-action]"),
+          ].find(
+            (el) =>
+              el.dataset.action === focus.action && el.dataset.id === focus.id,
+          );
+          (replacement || $("#people-search"))?.focus();
+        }
+      }
       notify(
         `${result.added} people added. ${result.updated} existing contacts updated.`,
       );
@@ -1587,9 +1649,12 @@ document.addEventListener("click", async (e) => {
       );
   } catch (error) {
     if (draftJob && !draftJobs.isCurrent(draftJob)) return;
-    if (action === "confirm-import" && $("#import-save-error")) {
-      $("#import-save-error").className = "notice error";
-      $("#import-save-error").textContent = error.message;
+    const importError = importJob?.preview.isConnected
+      ? importJob.preview.querySelector("#import-save-error")
+      : null;
+    if (importError) {
+      importError.className = "notice error";
+      importError.textContent = error.message;
       return;
     }
     notify(
@@ -1599,6 +1664,13 @@ document.addEventListener("click", async (e) => {
       true,
     );
   } finally {
+    if (importJob) {
+      pendingImport = null;
+      importJob.dialog.removeAttribute("aria-busy");
+      importJob.preview.querySelector("#import-status")?.remove();
+      for (const [control, disabled] of importJob.controls)
+        control.disabled = disabled;
+    }
     if (sentDraft) sentDrafts.delete(c.id);
     if (draftJob) {
       draftJobs.finish(draftJob);

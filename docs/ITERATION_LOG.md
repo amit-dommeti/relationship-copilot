@@ -2,6 +2,15 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Keep Editing During An Import - November 1, 2026
+
+- Reproduced a held import completing after dismissal and closing an unrelated person form, removing its unsaved name. Completion now checks the originating dialog before closing, navigating, or rerendering; unrelated input and focus remain intact. A late error targets its own preview or a toast, not another editor.
+- Capture the confirmed payload and circle before awaiting draft saving. Keep one pending import, disable its file/paste/circle/confirmation controls, ignore replacement drops, guard new imports and workspace switches, and include the operation in unload warnings. Failure unlocks the same preview for retry.
+- Production build, all 84 automated tests, and focused synthetic Chromium checks pass for slow success, preserved editor/focus, duplicate clicks, ignored drops, pending controls, reimport/workspace/unload guards, failed save/retry, reload persistence, and late failure after dismissal. Inspected desktop/mobile pending-state captures with no overflow/overlap; existing portfolio screenshots remain representative. The initial full Chromium suite passed.
+- Independent review identified a stale People list after dismissing an import. Refresh its results in place without replacing search/filter controls or the current editor, retaining keyboard focus on a matching row control or falling back to search. Expanded focused tests and the next full suite pass for immediate imported rows, preserved search value/selection, and row focus. Other page summaries/filter options retain their next-render behavior.
+- Re-review found an offscreen focus fallback when an import moves a focused last row onto page two. Reproduced with 30 synthetic contacts, then allowed restored focus to scroll into view. The dedicated pagination regression, final build, all 84 automated tests, and final complete Chromium suite pass. The narrow re-review found no further issue. Full runs used idle-sleep inhibition for the test process; no assertions or timeouts were weakened.
+- Closing the dialog does not cancel a submitted import. No durable import recovery, general concurrent import/edit conflict resolution, or new server idempotency is claimed. No real contact data, AI evaluation, external account access, paid services, migration, Site identity, or sharing changes. Publication is established separately by native Site success and the GitHub head.
+
 ## Keep Your Place With The Keyboard - October 19, 2026
 
 - Reproduced Enter on the Conversation tab leaving keyboard focus outside the drawer. Added automatic Left/Right wrapping, Home/End, a single active tab stop, associated labeled panels, and focus retention on activation. Re-activating the selected tab no longer redraws unsaved controls.

@@ -7,6 +7,10 @@ import { createServer } from "node:net";
 import { zipSync, strToU8 } from "fflate";
 import { checkDraftGeneration } from "./draft-generation-browser.mjs";
 import { checkImportSafety } from "./import-safety-browser.mjs";
+import {
+  checkImportLifecycle,
+  checkImportPageFocus,
+} from "./import-lifecycle-browser.mjs";
 import { checkReplyBuffer } from "./reply-buffer-browser.mjs";
 import { checkMessageRetries } from "./message-retry-browser.mjs";
 import { checkSentDraftSafety } from "./sent-draft-browser.mjs";
@@ -346,6 +350,7 @@ try {
 
   await checkDraftGeneration(page, base);
   await checkImportSafety(page, base, shots);
+  await checkImportLifecycle(page, base);
   await checkReplyBuffer(page, base, shots);
   await checkMessageRetries(page, base);
   await checkSentDraftSafety(page, base);
@@ -359,6 +364,7 @@ try {
   await checkKeyboardNavigation(page, base);
   await checkDelayedOpener(page, base);
   await checkRouteFocus(page, base);
+  await checkImportPageFocus(page, base);
   await page.goto(base + "/?demo=1#today");
   await page
     .getByRole("heading", { name: "A little closer, one hello at a time." })

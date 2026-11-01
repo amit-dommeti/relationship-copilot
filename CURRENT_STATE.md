@@ -1,6 +1,6 @@
 # Current State
 
-Updated October 19, 2026. Scope: Relationship Copilot only.
+Updated November 1, 2026. Scope: Relationship Copilot only.
 
 ## Product And Boundaries
 
@@ -11,6 +11,15 @@ Updated October 19, 2026. Scope: Relationship Copilot only.
 - Optional AI drafting is implemented but not live-evaluated. No-key mode is explicitly a local starter. No model/key or integration changes in this iteration.
 
 ## Latest Verified Change
+
+Reproduced a slow import completing after dismissal, closing an unrelated person editor and losing its unsaved name. Import completion now closes/navigates only its original still-open dialog. A dismissed import can finish without disturbing another editor's input or focus; errors target the originating preview or a toast when it is gone.
+
+- Capture the confirmed preview and circle before awaiting saves. Lock file/paste/circle/confirmation controls while saving, ignore replacement drops, prevent overlapping imports and private/demo switches, and warn before unload while the import remains pending.
+- Failures restore the same preview controls for retry. No new persistent copy of private data, server changes, migrations, AI calls, or account access.
+- Production build, all 84 automated tests, focused Chromium regressions, and the complete desktop/tablet/mobile browser suite pass on final source. Synthetic pending-state captures inspected; no overflow or overlap. Independent review found a stale People list and an offscreen pagination focus fallback; both were repaired and covered, with no further finding in the narrow re-review. Publication is established separately by native Site success and the GitHub head.
+- Explicit dismissal is not cancellation: an already submitted import may still finish. This is not durable recovery, a new server idempotency guarantee, or general import/edit conflict resolution. A completion after dismissal updates visible People rows in place; other page summaries and filter options update on their next render.
+
+## Previous Keyboard Verification
 
 Contact details support Left/Right arrows with wraparound, Home/End, a single active tab in the Tab sequence, and labeled content panels. Switching tabs retains focus; activating the already selected tab leaves unsaved controls alone. Dialog Tab movement excludes disabled/hidden controls and recovers if focus is lost during redraw. Closing restores the original page opener through replacement dialogs, a matching control after rerender, or the page heading if the opener is gone. Route changes focus their new heading.
 
@@ -43,7 +52,7 @@ Pending person, circle, and reminder saves warn before unloading and block works
 - App: https://relationship-copilot-amit.plumlyric7.chatgpt.site
 - Public source: https://github.com/amit-dommeti/relationship-copilot
 - Existing identity is tracked in `.openai/hosting.json`; never replace it or broaden access without approval.
-- Prior confirmed release: reminder lifecycle, Site source `ed0a41f959ca69a25853b61e91bcf5aa0057b787`, GitHub `14f08eab0b6a772ac4e7a6d5e5a0cc3a55389fa4`, identical source tree `9ab78045df2f563246dd48a035d4d731d1efe307`. This file records the keyboard follow-up, not its own publication receipt.
+- Prior confirmed release: keyboard navigation, Site source `ef41e9b40f8c75b81c3f3d536319e606fe6498ea`, GitHub `584f399adf12b037faae8258ce177f1bbf354e63`, identical source tree `833aaa8a43ed410d699e25e7cba273d696a9104e`. This file records the import follow-up, not its own publication receipt.
 - Open/synchronize and package via the Sites source helper. Use connected GitHub write tools if local push credentials are unavailable. Never put credentials, contact exports, or private data in GitHub.
 
 ## Limits And Next Useful Checks

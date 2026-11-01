@@ -1,5 +1,19 @@
 # V2 Release Checks
 
+## Import Lifecycle - November 1, 2026
+
+- [x] Reproduced delayed import closing an unrelated editor and losing unsaved text.
+- [x] Production build and all 84 automated tests pass.
+- [x] Focused Chromium pending controls, drop/duplicate guards, workspace/unload guards, editor/focus retention, failure/retry, and reload checks pass.
+- [x] Synthetic desktop/mobile pending captures inspected, with no overlap or overflow.
+- [x] Complete Chromium regression suite passes on final source, including search/row focus and displaced-row pagination regression.
+- [x] Independent scoped review and re-review completed; stale list and offscreen focus findings repaired.
+- [ ] Real user import validation and cross-browser audit completed.
+
+Publication is confirmed by native Site/GitHub results, not by this checklist. Dialog dismissal does not cancel a submitted import; no crash recovery or general concurrent-edit guarantee is added.
+
+## Original V2 Checks
+
 October 9, 2026. Checks apply to Relationship Copilot only.
 
 - [x] Target user, core loop, and platform risk documented.

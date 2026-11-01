@@ -32,6 +32,14 @@ Only five static assets are served. There is no directory listing or route to lo
 
 Message insertion and conversation-state updates share a transaction. Older replies cannot reopen a conversation answered more recently. Imports match stable identifiers and do not overwrite notes or circles for matching people. Backups merge, not replace.
 
+## Import Save Lifecycle
+
+The browser captures the confirmed preview and circle before awaiting draft saves. A tab-local pending import owns its dialog, preview, payload, and disabled controls until saving and refresh finish. File/paste/circle/confirmation controls are locked; replacement drops, overlapping imports, and private/demo switches cannot change the operation. Pending imports participate in unload warnings. Other read-only navigation remains available.
+
+Completion closes and navigates only if that import's dialog is still connected. If it was dismissed, current editors and their input/focus stay untouched. Visible People rows refresh in place while search/filter controls remain intact; replaced result controls recover focus by action/identity, falling back to search and allowing focus to scroll into view. Other page summaries and filter options update on their next render. Failure is attached to the original preview while connected, otherwise reported in a toast. Cleanup restores controls and releases the lock for retry, including after local demo storage failure.
+
+Dismissal is not cancellation. This protects editor ownership within one tab, not forced-shutdown recovery, general refresh ordering, simultaneous imports/edits across tabs, or server idempotency after a lost acknowledgement. Existing transaction and merge behavior below is unchanged.
+
 ## All-Or-Nothing Workspace Imports
 
 `shared/import-validation.js` checks the whole backup in both browser preview and server processing. Malformed records, oversized collections, and messages without a resolvable contact reject the import rather than silently dropping history. The server resolves message contact IDs after identity matching and scopes that lookup to the current owner.

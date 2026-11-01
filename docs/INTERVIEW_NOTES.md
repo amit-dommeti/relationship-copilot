@@ -94,4 +94,6 @@ Evidence: before/after local keyboard regressions, synthetic pending-save checks
 
 ## Don't Overclaim
 
+Import lifecycle example: a delayed import was reproduced closing an unrelated editor and discarding unsaved typing. The bounded fix ties completion to its originating dialog and blocks competing imports/workspace changes while it is pending. Review caught the resulting stale People list; refresh just the results while retaining the surrounding controls and editor. Synthetic checks cover failure/retry as well as success. Closing a dialog does not cancel a server operation. This is observed local behavior, not measured user impact or general crash recovery.
+
 No fabricated PM experiments, launch cohorts, conversion lift, model-quality wins, or production LinkedIn sync. Historical v0 labels represent feature milestones, not seven validated releases.
