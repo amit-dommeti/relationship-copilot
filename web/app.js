@@ -627,8 +627,9 @@ function visiblePeople() {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 function peopleTable() {
-  const all = visiblePeople(),
-    visible = all.slice(page * 30, page * 30 + 30);
+  const all = visiblePeople();
+  page = Math.max(0, Math.min(page, Math.ceil(all.length / 30) - 1));
+  const visible = all.slice(page * 30, page * 30 + 30);
   return all.length
     ? `<div class="table-wrap"><table><thead><tr><th>Person</th><th>Circle</th><th>Last hello</th><th>Next step</th><th><span class="hide">Actions</span></th></tr></thead><tbody>${visible.map((c) => `<tr><td><button class="person-button" data-action="person" data-id="${c.id}">${avatar(c)}<div><div class="person-title">${esc(c.name)}${c.favorite ? i("star") : ""}</div><div class="person-role">${esc(c.role)}${c.company ? ` · ${esc(c.company)}` : ""}</div></div></button></td><td>${circlesFor(c).slice(0, 1).map(chip).join("") || '<span class="muted">Unsorted</span>'}${c.circleIds.length > 1 ? ` <small class="muted">+${c.circleIds.length - 1}</small>` : ""}</td><td>${relative(c.lastContactAt)}</td><td><span class="pill-status ${c.needsReply ? "reply" : ""}">${c.needsReply ? "Your turn" : dateValue(c.snoozedUntil) > Date.now() ? `Snoozed to ${fmt(c.snoozedUntil)}` : c.draft ? "Draft saved" : c.archived ? "Archived" : "Keep in touch"}</span></td><td>${ib("Edit " + c.name, "edit-person", "pencil", `data-id="${c.id}"`)}</td></tr>`).join("")}</tbody></table></div><div class="table-foot"><span>${all.length} ${all.length === 1 ? "person" : "people"}</span>${all.length > 30 ? `<div class="row">${ib("Previous page", "prev", "chevron-left", page === 0 ? "disabled" : "")}<span>${page + 1} / ${Math.ceil(all.length / 30)}</span>${ib("Next page", "next", "chevron-right", (page + 1) * 30 >= all.length ? "disabled" : "")}</div>` : ""}</div>`
     : empty(

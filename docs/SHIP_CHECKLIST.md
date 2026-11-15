@@ -1,5 +1,15 @@
 # V2 Release Checks
 
+## People Pagination - November 15, 2026
+
+- [x] Reproduced disappearing last page hiding remaining contacts.
+- [x] Build, all 84 automated tests, and focused Chromium boundary checks pass.
+- [x] Archive/Undo, edit/import result shrink, search/cursor retention, and empty-result recovery covered with fictional data.
+- [x] Desktop/mobile captures inspected with no horizontal overflow; no layout refresh needed.
+- [x] Complete browser suite passes on final source, including new pagination and preceding core-journey regressions.
+
+No data model or access changes. Publication is confirmed by native Site/GitHub results, separately from these checks.
+
 ## Import Lifecycle - November 1, 2026
 
 - [x] Reproduced delayed import closing an unrelated editor and losing unsaved text.

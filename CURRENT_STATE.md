@@ -1,6 +1,6 @@
 # Current State
 
-Updated November 1, 2026. Scope: Relationship Copilot only.
+Updated November 15, 2026. Scope: Relationship Copilot only.
 
 ## Product And Boundaries
 
@@ -11,6 +11,14 @@ Updated November 1, 2026. Scope: Relationship Copilot only.
 - Optional AI drafting is implemented but not live-evaluated. No-key mode is explicitly a local starter. No model/key or integration changes in this iteration.
 
 ## Latest Verified Change
+
+Reproduced an empty People table after archiving the only contact on page three, despite 60 matching contacts remaining. The list now bounds its page index against the current filtered results before slicing rows. It returns to the nearest remaining page rather than restarting a still-valid page or leaving people hidden.
+
+- Production build, all 84 automated tests, focused Chromium checks, and the full desktop/tablet/mobile browser suite pass. New checks cover 61-to-60 and 31-to-30 archive transitions, Undo, result shrink after relationship edits and dismissed imports, search/cursor preservation, and empty-result recovery.
+- Inspected synthetic desktop/mobile captures; no horizontal overflow and no layout redesign. Existing portfolio screenshots remain representative.
+- No storage, import merge rules, AI settings, LinkedIn access, migrations, or audience changes. This fixes page bounds when rendering; it is not a general data-refresh or concurrent-edit guarantee. Publication is verified separately by native Site success and the public GitHub head.
+
+## Previous Import Verification
 
 Reproduced a slow import completing after dismissal, closing an unrelated person editor and losing its unsaved name. Import completion now closes/navigates only its original still-open dialog. A dismissed import can finish without disturbing another editor's input or focus; errors target the originating preview or a toast when it is gone.
 
@@ -49,10 +57,10 @@ Pending person, circle, and reminder saves warn before unloading and block works
 
 ## Deployment Context
 
-- App: https://relationship-copilot-amit.plumlyric7.chatgpt.site
+- App: https://relationship-copilot-amit.amitdommeti.chatgpt.site (address returned by native publication on November 15; existing project identity and owner-private audience retained).
 - Public source: https://github.com/amit-dommeti/relationship-copilot
 - Existing identity is tracked in `.openai/hosting.json`; never replace it or broaden access without approval.
-- Prior confirmed release: keyboard navigation, Site source `ef41e9b40f8c75b81c3f3d536319e606fe6498ea`, GitHub `584f399adf12b037faae8258ce177f1bbf354e63`, identical source tree `833aaa8a43ed410d699e25e7cba273d696a9104e`. This file records the import follow-up, not its own publication receipt.
+- Prior confirmed release: import lifecycle, Site source `932d1a9be7dbb805ee1093f02d3ed0939299a69b`, GitHub `a3fc8c2ef760054439ca16a91bbb9d041493952d`, identical source tree `2ee1b60ea843dbb4dfb6a206d1ecb09e68703011`. This file records the pagination follow-up, not its own publication receipt.
 - Open/synchronize and package via the Sites source helper. Use connected GitHub write tools if local push credentials are unavailable. Never put credentials, contact exports, or private data in GitHub.
 
 ## Limits And Next Useful Checks

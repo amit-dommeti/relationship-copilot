@@ -18,6 +18,7 @@ import { checkDemoImport } from "./demo-import-browser.mjs";
 import { checkContactPatches } from "./contact-patch-browser.mjs";
 import { checkPersonFormSafety } from "./person-form-browser.mjs";
 import { checkPersonSaveLifecycle } from "./person-save-browser.mjs";
+import { checkPeoplePagination } from "./people-pagination-browser.mjs";
 import { checkReminderSafety } from "./reminder-browser.mjs";
 import {
   checkKeyboardNavigation,
@@ -365,6 +366,7 @@ try {
   await checkDelayedOpener(page, base);
   await checkRouteFocus(page, base);
   await checkImportPageFocus(page, base);
+  await checkPeoplePagination(page, base);
   await page.goto(base + "/?demo=1#today");
   await page
     .getByRole("heading", { name: "A little closer, one hello at a time." })

@@ -2,6 +2,14 @@
 
 The v0 labels below are retrospective feature milestones, not independently validated releases or dated experiments.
 
+## Keep Remaining People Reachable - November 15, 2026
+
+- Reproduced archiving the only row on page three leaving zero visible rows although 60 matching contacts remained. The page index was not adjusted when the filtered list shrank. Bound it to the current first/last page before selecting rows; preserve a still-valid page.
+- Focused Chromium checks pass for 61-to-60 and 31-to-30 archive transitions, staying on page two after Undo adds page three, shrinking search results after an edit or dismissed import, preserved search text/cursor, and empty-result Undo. Confirmed all 61 synthetic contact records remain present; the fix changes navigation, not storage.
+- Corrected one test-fixture assumption: imports deliberately preserve existing names, so the import-shrink case now uses an updated job title. No application merge rules, assertions, or timeouts were weakened to make the check pass.
+- Production build, all 84 automated tests, and the complete Chromium browser suite pass, including preceding import/draft/reply/person/circle/keyboard protections and desktop/tablet/mobile routes. Inspected desktop/mobile captures with no horizontal overflow; existing portfolio screenshots remain representative. Browser runs used idle-sleep inhibition for the test process.
+- No real contacts, account access, AI evaluation, migration, Site identity, or sharing changes. This is a page-bounds repair, not general refresh ordering or conflict resolution. Publication is established separately by native Site/GitHub results; no measured user impact is claimed.
+
 ## Keep Editing During An Import - November 1, 2026
 
 - Reproduced a held import completing after dismissal and closing an unrelated person form, removing its unsaved name. Completion now checks the originating dialog before closing, navigating, or rerendering; unrelated input and focus remain intact. A late error targets its own preview or a toast, not another editor.
